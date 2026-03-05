@@ -975,8 +975,8 @@ else:
                     # 3. Montagem do Dicionário para o Supabase
                     # Ajustado conforme as colunas do seu print
                     nova_ocorrencia = {
-                        "solicitante": st.session_state.usuario.get('nome', 'Usuário'),
-                        "email_solicita": st.session_state.usuario.get('email', 'Sem Matrícula'),
+                        "solicitante": st.session_state.usuario['nome'] if 'usuario' in st.session_state else "Usuário Desconhecido",
+                        "email_solicita": st.session_state.usuario['email'] if 'usuario' in st.session_state else "Sem Matrícula",
                         "data": txt_data,
                         "horarios": txt_h,
                         "status": "⏳ Pendente",
@@ -1049,6 +1049,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

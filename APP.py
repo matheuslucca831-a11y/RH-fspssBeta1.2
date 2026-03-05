@@ -332,25 +332,25 @@ if user['cargo'] == "Gestor Máximo":
                 n_m = c2.text_input("Senha")
                 n_e = c1.text_input("Matrícula")
                 n_c = c2.selectbox("Cargo", ["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"])
-                    if st.form_submit_button("Salvar"):
-                        # n_e é o que o ADM digitou no campo "Matrícula" (que serve de Login)
-                        # n_m é o que o ADM digitou no campo "Senha"
-                        
-                        novo_usuario = {
-                            "email": str(n_e).strip(),           # O LOGIN vai para a coluna 'email'
-                            "nome": n_n,
-                            "cargo": n_c,
-                            "matricula": gerar_hash(str(n_m))    # O HASH DA SENHA vai para a coluna 'matricula'
-                        }
+                if st.form_submit_button("Salvar"):
+                    # n_e é o que o ADM digitou no campo "Matrícula" (que serve de Login)
+                    # n_m é o que o ADM digitou no campo "Senha"
                     
-                        try:
-                            supabase.table("usuarios").insert(novo_usuario).execute()
-                            # RECARGA CRÍTICA: Se não atualizar aqui, o login não "vê" o novo user
-                            st.session_state.db_usuarios = carregar_usuarios() 
-                            st.success(f"Usuário {n_n} cadastrado!")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Erro no Supabase: {e}")
+                    novo_usuario = {
+                        "email": str(n_e).strip(),           # O LOGIN vai para a coluna 'email'
+                        "nome": n_n,
+                        "cargo": n_c,
+                        "matricula": gerar_hash(str(n_m))    # O HASH DA SENHA vai para a coluna 'matricula'
+                    }
+                
+                    try:
+                        supabase.table("usuarios").insert(novo_usuario).execute()
+                        # RECARGA CRÍTICA: Se não atualizar aqui, o login não "vê" o novo user
+                        st.session_state.db_usuarios = carregar_usuarios() 
+                        st.success(f"Usuário {n_n} cadastrado!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro no Supabase: {e}")
 
         busca = st.text_input("🔍 Pesquisar:")
         for u in [u for u in st.session_state.db_usuarios if busca.lower() in u['nome'].lower() or busca in str(u.get('matricula', ''))]:
@@ -955,6 +955,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

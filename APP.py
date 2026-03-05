@@ -21,7 +21,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # FUNÇÃO PARA CARREGAR USUÁRIOS
 @st.cache_data
 def carregar_usuarios():
-    response = supabase.table("Tabela de usuários").select("*").execute()
+    response = supabase.table("usuarios").select("*").execute()
     return response.data
 
 
@@ -929,4 +929,5 @@ else:
                         except:
                             st.warning("Anexo não encontrado")
         else:
+
             st.info("Você ainda não possui ocorrências registradas.")

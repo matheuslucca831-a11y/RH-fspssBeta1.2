@@ -573,33 +573,33 @@ if user['cargo'] == "Gestor Máximo":
                                 )
                             
                                 ce1, ce2 = st.columns(2)
-                                    if ce1.button("✅ Salvar", key=f"sv_{l_email}", use_container_width=True):
-                                        try:
-                                            # 1. Limpa os vínculos antigos desse líder no Supabase
-                                            supabase.table("vinculos").delete().eq("lider", l_email).execute()
-                                            
-                                            # 2. Insere os novos se houver algum selecionado
-                                            if novo_time:
-                                                novos_vincs = [{"lider": l_email, "liderado": ld} for ld in novo_time]
-                                                supabase.table("vinculos").insert(novos_vincs).execute()
-                                            
-                                            # 3. Atualiza a memória local (Sincroniza com o Banco)
-                                            st.session_state.vinculos = carregar_vinculos()
-                                            
-                                            # 4. Fecha o modo de edição e reinicia
-                                            if f"editando_{l_email}" in st.session_state:
-                                                del st.session_state[f"editando_{l_email}"]
-                                            
-                                            st.success("Vínculos atualizados com sucesso!")
-                                            st.rerun()
-                                            
-                                        except Exception as e:
-                                            st.error(f"Erro ao salvar no Supabase: {e}")
-        
-                                    if ce2.button("❌ Cancelar", key=f"cn_{l_email}", use_container_width=True):
+                                if ce1.button("✅ Salvar", key=f"sv_{l_email}", use_container_width=True):
+                                    try:
+                                        # 1. Limpa os vínculos antigos desse líder no Supabase
+                                        supabase.table("vinculos").delete().eq("lider", l_email).execute()
+                                        
+                                        # 2. Insere os novos se houver algum selecionado
+                                        if novo_time:
+                                            novos_vincs = [{"lider": l_email, "liderado": ld} for ld in novo_time]
+                                            supabase.table("vinculos").insert(novos_vincs).execute()
+                                        
+                                        # 3. Atualiza a memória local (Sincroniza com o Banco)
+                                        st.session_state.vinculos = carregar_vinculos()
+                                        
+                                        # 4. Fecha o modo de edição e reinicia
                                         if f"editando_{l_email}" in st.session_state:
                                             del st.session_state[f"editando_{l_email}"]
+                                        
+                                        st.success("Vínculos atualizados com sucesso!")
                                         st.rerun()
+                                        
+                                    except Exception as e:
+                                        st.error(f"Erro ao salvar no Supabase: {e}")
+    
+                                if ce2.button("❌ Cancelar", key=f"cn_{l_email}", use_container_width=True):
+                                    if f"editando_{l_email}" in st.session_state:
+                                        del st.session_state[f"editando_{l_email}"]
+                                    st.rerun()
 
     with t_hist:
         st.subheader("📊 Monitoramento Geral")
@@ -1049,6 +1049,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

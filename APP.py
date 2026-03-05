@@ -985,13 +985,13 @@ else:
     
                     # 3. Montagem do Dicionário para o Supabase
                     nova_ocorrencia = {
-                        "solicitante": st.session_state.usuario.get('nome'),
-                        "email_solicitante": st.session_state.usuario.get('email'), # Nome exato da foto image_077047.png
+                        "solicitante": st.session_state.usuario_logado.get('nome'),
+                        "email_solicitante": st.session_state.usuario_logado.get('email'), # Nome da coluna que vimos na foto
                         "data": txt_data,
                         "motivo": mot,
                         "status": "⏳ Pendente",
                         "detalhes": just,
-                        "horarios": txt_h, # Plural conforme image_07711b.png
+                        "horarios": txt_h, # Plural conforme a foto
                         "anexo": link_final_anexo,
                         "arquivado": "Não"
                     }
@@ -1058,6 +1058,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

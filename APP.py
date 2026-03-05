@@ -39,8 +39,10 @@ if "db_usuarios" not in st.session_state:
     st.session_state.db_usuarios = carregar_usuarios()
 
 
-# 🔹 CRIA USUÁRIO MASTER SE NÃO EXISTIR NENHUM
-if len(st.session_state.db_usuarios) == 0:
+# verifica se o usuário 0001 já existe no banco
+usuario_existe = supabase.table("usuarios").select("*").eq("email", "0001").execute()
+
+if len(usuario_existe.data) == 0:
     usuario_padrao = {
         "email": "0001",
         "nome": "Gestor Master",
@@ -49,6 +51,9 @@ if len(st.session_state.db_usuarios) == 0:
     }
 
     supabase.table("usuarios").insert(usuario_padrao).execute()
+
+# recarrega usuários
+st.session_state.db_usuarios = carregar_usuarios()
 
     # recarrega usuários
     st.session_state.db_usuarios = carregar_usuarios()
@@ -929,6 +934,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

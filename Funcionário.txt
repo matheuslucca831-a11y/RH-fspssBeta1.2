@@ -1,0 +1,15 @@
+Funcionário
+Login 2
+senha 1234
+
+Enfermeiro
+Login 3
+Senha 123
+
+Supervisor
+Login 4
+Senha 123
+
+Gestor Máximo
+Login 5
+Senha 123

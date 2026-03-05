@@ -16,16 +16,22 @@ def gerar_hash(senha):
     
 def carregar_vinculos():
     try:
+        # Busca todos os registros da tabela 'vinculos'
         res = supabase.table("vinculos").select("*").execute()
+        
+        # O Streamlit espera um dicionário: { "email_lider": ["email_ld1", "email_ld2"] }
         vinc_dict = {}
         for r in res.data:
-            l = r['lider']
-            ld = r['liderado']
-            if l not in vinc_dict:
-                vinc_dict[l] = []
-            vinc_dict[l].append(ld)
+            lider = r['lider']
+            liderado = r['liderado']
+            
+            if lider not in vinc_dict:
+                vinc_dict[lider] = []
+            vinc_dict[lider].append(liderado)
+            
         return vinc_dict
-    except:
+    except Exception as e:
+        st.error(f"Erro ao carregar vínculos do banco: {e}")
         return {}
 
 def carregar_ocorrencias():
@@ -1049,6 +1055,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

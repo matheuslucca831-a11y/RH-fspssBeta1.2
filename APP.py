@@ -3,14 +3,17 @@ import pandas as pd
 import os
 import uuid
 import base64
-from passlib.hash import pbkdf2_sha256
 from datetime import datetime, time
 import streamlit as st
 from datetime import datetime, timedelta
 from streamlit_cookies_manager import EncryptedCookieManager
 import streamlit as st
 from supabase import create_client
+from passlib.hash import pbkdf2_sha256
 
+def gerar_hash(senha):
+    return pbkdf2_sha256.hash(senha)
+    
 # conexão com Supabase
 SUPABASE_URL = "https://zedgyvekirmsqvstqvjt.supabase.co"
 SUPABASE_KEY = "sb_publishable_CMyfROBsVOztTMfSDwX_zA_Tl4m3aaw"
@@ -931,3 +934,4 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+

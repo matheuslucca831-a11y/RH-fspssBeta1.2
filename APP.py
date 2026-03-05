@@ -16,27 +16,19 @@ def gerar_hash(senha):
     
 def carregar_vinculos():
     try:
-        # Busca todos os registros do Supabase
         res = supabase.table("vinculos").select("*").execute()
-        
-        # O objetivo é transformar a lista de linhas do banco nisto:
-        # { "email_lider@exemplo.com": ["email_liderado1@exemplo.com", "email_liderado2@exemplo.com"] }
         vinc_dict = {}
-        
-        if res.data:
-            for r in res.data:
-                l = r['lider']
-                ld = r['liderado']
-                
-                if l not in vinc_dict:
-                    vinc_dict[l] = []
-                vinc_dict[l].append(ld)
-        
+        for r in res.data:
+            # Forçamos tudo para String para não dar erro entre '1' e 1
+            lider = str(r['lider']).strip()
+            liderado = str(r['liderado']).strip()
+            
+            if lider not in vinc_dict:
+                vinc_dict[lider] = []
+            vinc_dict[lider].append(liderado)
         return vinc_dict
     except Exception as e:
-        st.error(f"Erro ao carregar do Supabase: {e}")
         return {}
-
 def carregar_ocorrencias():
     try:
         # Busca todas as linhas da tabela 'ocorrencias'
@@ -1061,6 +1053,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

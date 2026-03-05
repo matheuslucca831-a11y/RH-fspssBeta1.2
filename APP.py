@@ -886,7 +886,14 @@ else:
     # ---------------- NOVA OCORRÊNCIA ----------------
 
     with tab_nova:
+        # 🛑 SEGURANÇA: Se o usuário não estiver logado, para tudo aqui.
+    if 'usuario' not in st.session_state or st.session_state.usuario is None:
+        st.warning("⚠️ Sessão expirada ou usuário não logado. Por favor, faça o login novamente.")
+        st.stop() 
 
+    # Se passou da trava acima, o código abaixo funciona sem erro
+        st.header("📝 Minhas Ocorrências de Ponto")
+    
         st.header("📝 Minhas Ocorrências de Ponto")
 
         mot = st.selectbox(
@@ -1047,6 +1054,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

@@ -12,7 +12,7 @@ from supabase import create_client
 from passlib.hash import pbkdf2_sha256
 
 def gerar_hash(senha):
-    return pbkdf2_sha256.hash(senha)
+    return pbkdf2_sha256.verify(senha, hash_salvo)
     
 # conexão com Supabase
 SUPABASE_URL = "https://zedgyvekirmsqvstqvjt.supabase.co"
@@ -934,5 +934,6 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 

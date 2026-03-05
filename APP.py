@@ -17,8 +17,6 @@ def gerar_hash(senha):
 def carregar_vinculos():
     try:
         res = supabase.table("vinculos").select("*").execute()
-        # Transformamos a lista de registros em um dicionário {lider: [liderados]}
-        # para manter a compatibilidade com o seu código atual
         vinc_dict = {}
         for r in res.data:
             l = r['lider']
@@ -27,7 +25,7 @@ def carregar_vinculos():
                 vinc_dict[l] = []
             vinc_dict[l].append(ld)
         return vinc_dict
-    except Exception as e:
+    except:
         return {}
 
 def carregar_ocorrencias():
@@ -574,17 +572,34 @@ if user['cargo'] == "Gestor Máximo":
                                     key=f"ms_{l_email}"
                                 )
                             
-                            ce1, ce2 = st.columns(2)
-                            if ce1.button("✅ Salvar", key=f"sv_{l_email}", use_container_width=True):
-                                st.session_state.vinculos[l_email] = novo_time
-                                regs = [{"lider": l, "liderado": ld} for l, lds in st.session_state.vinculos.items() for ld in lds]
-                                salvar_csv(ARQUIVOS["vinculos"], regs)
-                                del st.session_state[f"editando_{l_email}"]
-                                st.rerun()
-                                
-                            if ce2.button("❌ Cancelar", key=f"cn_{l_email}", use_container_width=True):
-                                del st.session_state[f"editando_{l_email}"]
-                                st.rerun()
+                                ce1, ce2 = st.columns(2)
+                                    if ce1.button("✅ Salvar", key=f"sv_{l_email}", use_container_width=True):
+                                        try:
+                                            # 1. Limpa os vínculos antigos desse líder no Supabase
+                                            supabase.table("vinculos").delete().eq("lider", l_email).execute()
+                                            
+                                            # 2. Insere os novos se houver algum selecionado
+                                            if novo_time:
+                                                novos_vincs = [{"lider": l_email, "liderado": ld} for ld in novo_time]
+                                                supabase.table("vinculos").insert(novos_vincs).execute()
+                                            
+                                            # 3. Atualiza a memória local (Sincroniza com o Banco)
+                                            st.session_state.vinculos = carregar_vinculos()
+                                            
+                                            # 4. Fecha o modo de edição e reinicia
+                                            if f"editando_{l_email}" in st.session_state:
+                                                del st.session_state[f"editando_{l_email}"]
+                                            
+                                            st.success("Vínculos atualizados com sucesso!")
+                                            st.rerun()
+                                            
+                                        except Exception as e:
+                                            st.error(f"Erro ao salvar no Supabase: {e}")
+        
+                                    if ce2.button("❌ Cancelar", key=f"cn_{l_email}", use_container_width=True):
+                                        if f"editando_{l_email}" in st.session_state:
+                                            del st.session_state[f"editando_{l_email}"]
+                                        st.rerun()
 
     with t_hist:
         st.subheader("📊 Monitoramento Geral")
@@ -1034,6 +1049,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

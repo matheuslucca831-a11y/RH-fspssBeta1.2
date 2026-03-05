@@ -14,6 +14,31 @@ from passlib.hash import pbkdf2_sha256
 def gerar_hash(senha):
     return pbkdf2_sha256.hash(senha)
     
+def carregar_vinculos():
+    try:
+        res = supabase.table("vinculos").select("*").execute()
+        # Transformamos a lista de registros em um dicionário {lider: [liderados]}
+        # para manter a compatibilidade com o seu código atual
+        vinc_dict = {}
+        for r in res.data:
+            l = r['lider']
+            ld = r['liderado']
+            if l not in vinc_dict:
+                vinc_dict[l] = []
+            vinc_dict[l].append(ld)
+        return vinc_dict
+    except Exception as e:
+        return {}
+
+def carregar_ocorrencias():
+    try:
+        # Busca todas as linhas da tabela 'ocorrencias'
+        res = supabase.table("ocorrencias").select("*").execute()
+        return res.data
+    except Exception as e:
+        st.error(f"Erro ao carregar ocorrências: {e}")
+        return []
+    
 def subir_para_storage(arquivo_streamlit):
     """Sobe o arquivo para o Supabase e retorna a URL pública."""
     try:
@@ -314,7 +339,11 @@ if not st.session_state.autenticado:
                                 st.session_state.autenticado = True
                                 st.session_state.usuario_logado = u_f
                                 
-                                # Salva sessão temporária
+                                # --- MUDANÇA AQUI: Carrega os dados do Supabase para a memória ---
+                                with st.spinner("Carregando dados..."):
+                                    st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                
+                                # Salva sessão temporária no arquivo/cookie
                                 salvar_login(u_f["email"])
                                 
                                 st.success("Login realizado!")
@@ -473,12 +502,26 @@ if user['cargo'] == "Gestor Máximo":
                                                 format_func=lambda x: next(u['nome'] for u in st.session_state.db_usuarios if u['email'] == x))
                         
                         if st.form_submit_button("Confirmar Vínculo"):
-                            st.session_state.vinculos[l_sel['email']] = ld_sel
-                            regs = [{"lider": l, "liderado": ld} for l, lds in st.session_state.vinculos.items() for ld in lds]
-                            salvar_csv(ARQUIVOS["vinculos"], regs)
-                            st.success("Equipe atualizada!")
-                            st.rerun()
+                            try:
+                                # 1. Remove vínculos antigos do líder para não duplicar
+                                supabase.table("vinculos").delete().eq("lider", l_sel['email']).execute()
+                                
+                                # 2. Prepara e insere os novos registros
+                                novos_regs = [{"lider": l_sel['email'], "liderado": ld} for ld in ld_sel]
+                                if novos_regs:
+                                    supabase.table("vinculos").insert(novos_regs).execute()
+                                
+                                # 3. Atualiza a memória e recarrega
+                                st.session_state.vinculos = carregar_vinculos()
+                                st.success("Equipe atualizada no Supabase!")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro ao salvar no banco: {e}")
 
+
+
+
+                
                 st.write("---")
                 
                 # --- PARTE 2: FILTRO POR NOME ---
@@ -636,16 +679,22 @@ if user['cargo'] == "Gestor Máximo":
                                     st.error("Erro ao carregar arquivo para download.")
                             # Botões de Ação (Arquivar e Excluir)
                             if c2.button("📦 Arquivar", key=f"arq_filt_{o['id']}", use_container_width=True):
-                                for item in st.session_state.db_ocorrencias:
-                                    if str(item['id']) == str(o['id']):
-                                        item["arquivado"] = "Sim"
-                                salvar_csv(ARQUIVOS["ocorrencias"], st.session_state.db_ocorrencias)
-                                st.rerun()
+                                try:
+                                    # Atualiza a coluna 'arquivado' para 'Sim' no registro com esse ID
+                                    supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", o['id']).execute()
+                                    st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Erro ao arquivar: {e}")
 
                             if c2.button("🗑️ Excluir", key=f"exc_adm_{o['id']}", use_container_width=True):
-                                st.session_state.db_ocorrencias = [item for item in st.session_state.db_ocorrencias if str(item['id']) != str(o['id'])]
-                                salvar_csv(ARQUIVOS["ocorrencias"], st.session_state.db_ocorrencias)
-                                st.rerun()
+                                try:
+                                    # Remove fisicamente do banco de dados
+                                    supabase.table("ocorrencias").delete().eq("id", o['id']).execute()
+                                    st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Erro ao excluir: {e}")
         else:
             st.info("Sem registros no banco de dados.")
 
@@ -708,16 +757,11 @@ if user['cargo'] == "Gestor Máximo":
 
                         # Download de anexo, se houver
                         if o.get("anexo"):
-                            try:
-                                with open(o["anexo"], "rb") as f:
-                                    st.download_button(
-                                        label="📁 Baixar Anexo",
-                                        data=f,
-                                        file_name=os.path.basename(o["anexo"]),
-                                        key=f"dl_arq_{o['id']}"
-                                    )
-                            except:
-                                st.warning("Anexo não encontrado")
+                            st.divider()
+                            with st.expander("🖼️ Visualizar Documento", expanded=False):
+                                # O link do Supabase é exibido diretamente
+                                st.image(o["anexo"], caption="Documento Enviado")
+                                st.link_button("🔗 Abrir original em nova aba", o["anexo"], use_container_width=True)
 
                         # Botão para reativar
                         if st.button("📤 Reativar", key=f"re_{o['id']}"):
@@ -990,6 +1034,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

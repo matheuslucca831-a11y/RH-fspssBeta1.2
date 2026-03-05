@@ -278,37 +278,37 @@ if not st.session_state.autenticado:
             st.subheader("Acesso ao Sistema")
             e_in = st.text_input("Matrícula")
             s_in = st.text_input("(Senha)", type="password")
-                if st.button("Entrar", use_container_width=True):
-                    # FORÇAR RECARGA: Isso garante que o usuário recém-criado apareça na lista
-                    st.session_state.db_usuarios = carregar_usuarios() 
-                    
-                    # Busca tratando espaços extras (strip)
-                    matricula_digitada = str(e_in).strip()
-                    
-                    u_f = next(
-                        (u for u in st.session_state.db_usuarios 
-                         if str(u.get('email', '')).strip() == matricula_digitada),
-                        None
-                    )
+            if st.button("Entrar", use_container_width=True):
+                # FORÇAR RECARGA: Isso garante que o usuário recém-criado apareça na lista
+                st.session_state.db_usuarios = carregar_usuarios() 
                 
-                    if u_f:
-                        # LOG DE DEBUG (Apenas para teste, remova depois)
-                        # st.write(f"Usuário encontrado: {u_f['nome']}")
-                        # st.write(f"Hash no banco: {u_f['matricula'][:20]}...") 
+                # Busca tratando espaços extras (strip)
+                matricula_digitada = str(e_in).strip()
                 
-                        if verificar_senha(s_in, u_f['matricula']):
-                            st.session_state.autenticado = True
-                            st.session_state.usuario_logado = u_f
-                            
-                            # Salva no arquivo temporário e cookie
-                            salvar_login(u_f["email"])
-                            
-                            st.success("Login realizado!")
-                            st.rerun()
-                        else:
-                            st.error("Senha incorreta.") # O hash não bateu
+                u_f = next(
+                    (u for u in st.session_state.db_usuarios 
+                     if str(u.get('email', '')).strip() == matricula_digitada),
+                    None
+                )
+            
+                if u_f:
+                    # LOG DE DEBUG (Apenas para teste, remova depois)
+                    # st.write(f"Usuário encontrado: {u_f['nome']}")
+                    # st.write(f"Hash no banco: {u_f['matricula'][:20]}...") 
+            
+                    if verificar_senha(s_in, u_f['matricula']):
+                        st.session_state.autenticado = True
+                        st.session_state.usuario_logado = u_f
+                        
+                        # Salva no arquivo temporário e cookie
+                        salvar_login(u_f["email"])
+                        
+                        st.success("Login realizado!")
+                        st.rerun()
                     else:
-                        st.error("Matrícula não encontrada.") # O 'email' não existe na lista
+                        st.error("Senha incorreta.") # O hash não bateu
+                else:
+                    st.error("Matrícula não encontrada.") # O 'email' não existe na lista
 
 
 
@@ -965,6 +965,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

@@ -238,11 +238,7 @@ for chave, path in ARQUIVOS.items():
         st.session_state[f'db_{chave}'] = carregar_csv(path)
 
 if 'vinculos' not in st.session_state:
-    df_v = pd.DataFrame(st.session_state.db_vinculos)
-    if not df_v.empty and 'lider' in df_v.columns:
-        st.session_state.vinculos = df_v.groupby('lider')['liderado'].apply(list).to_dict()
-    else:
-        st.session_state.vinculos = {}
+    st.session_state.vinculos = carregar_vinculos()
 
 # --------------------------------------------------
 # 4. AUTENTICAÇÃO
@@ -1053,6 +1049,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

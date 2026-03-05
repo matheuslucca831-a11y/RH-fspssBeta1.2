@@ -143,8 +143,7 @@ st.set_page_config(page_title="RH Digital - FSPSS", layout="wide")
 
 ARQUIVOS = {
     "ocorrencias": "banco_ocorrencias.csv",
-    "vinculos": "banco_vinculos.csv",
-    "usuarios": "banco_usuarios.csv"
+    "vinculos": "banco_vinculos.csv"
 }
 PASTA_ANEXOS = "anexos"
 
@@ -194,10 +193,6 @@ df_arq = df_oc[df_oc["arquivado"] == "Sim"]
 for chave, path in ARQUIVOS.items():
     if f'db_{chave}' not in st.session_state:
         st.session_state[f'db_{chave}'] = carregar_csv(path)
-
-if not st.session_state.db_usuarios:
-    st.session_state.db_usuarios = [{"email": "admin@admin.com", "nome": "Administrador", "cargo": "Gestor Máximo", "matricula": "0001"}]
-    salvar_csv(ARQUIVOS["usuarios"], st.session_state.db_usuarios)
 
 if 'vinculos' not in st.session_state:
     df_v = pd.DataFrame(st.session_state.db_vinculos)
@@ -932,6 +927,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

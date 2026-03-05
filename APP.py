@@ -333,8 +333,22 @@ if user['cargo'] == "Gestor Máximo":
                 n_e = c1.text_input("Matrícula")
                 n_c = c2.selectbox("Cargo", ["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"])
                 if st.form_submit_button("Salvar"):
-                    st.session_state.db_usuarios.append({"email": n_e, "nome": n_n, "cargo": n_c, "matricula": gerar_hash(n_m)})
-                    salvar_csv(ARQUIVOS["usuarios"], st.session_state.db_usuarios); st.rerun()
+                
+                    novo_usuario = {
+                        "email": n_e,
+                        "nome": n_n,
+                        "cargo": n_c,
+                        "matricula": gerar_hash(n_m)
+                    }
+                
+                    try:
+                        supabase.table("usuarios").insert(novo_usuario).execute()
+                        st.success("Usuário cadastrado!")
+                        st.rerun()
+                
+                    except Exception as e:
+                        st.error("Erro ao salvar usuário")
+                        st.write(e)
 
         busca = st.text_input("🔍 Pesquisar:")
         for u in [u for u in st.session_state.db_usuarios if busca.lower() in u['nome'].lower() or busca in str(u.get('matricula', ''))]:
@@ -383,16 +397,28 @@ if user['cargo'] == "Gestor Máximo":
                     if nova_senha:
                         u["matricula"] = gerar_hash(nova_senha)
 
-                    salvar_csv(ARQUIVOS["usuarios"], st.session_state.db_usuarios)
-                    st.rerun()
+                    try:
+                        supabase.table("usuarios").update({
+                            "nome": novo_nome,
+                            "email": nova_matricula_login,
+                            "cargo": novo_cargo,
+                            "matricula": u["matricula"]
+                        }).eq("email", u["email"]).execute()
+                    
+                        st.success("Usuário atualizado!")
+                        st.rerun()
+                    
+                    except Exception as e:
+                        st.error("Erro ao atualizar usuário")
 
                 if c2.button("🗑️ Excluir", key=f"del_{u['email']}") and pode_editar:
-                    st.session_state.db_usuarios = [
-                        usr for usr in st.session_state.db_usuarios
-                        if usr["email"] != u["email"]
-                    ]
-                    salvar_csv(ARQUIVOS["usuarios"], st.session_state.db_usuarios)
-                    st.rerun()
+                    try:
+                        supabase.table("usuarios").delete().eq("email", u["email"]).execute()
+                        st.success("Usuário excluído!")
+                        st.rerun()
+                    
+                    except Exception as e:
+                        st.error("Erro ao excluir usuário")
 
     with t_vinc:
             st.subheader("🔗 Gerenciar Estrutura de Equipes")
@@ -927,6 +953,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

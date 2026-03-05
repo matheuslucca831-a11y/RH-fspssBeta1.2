@@ -885,11 +885,15 @@ else:
 
     # ---------------- NOVA OCORRÊNCIA ----------------
 
-    with tab_nova:
-            # 🛑 SEGURANÇA: Se o usuário não estiver logado, para tudo aqui.
-        if 'usuario' not in st.session_state or st.session_state.usuario is None:
-            st.warning("⚠️ Sessão expirada ou usuário não logado. Por favor, faça o login novamente.")
-            st.stop() 
+        with tab_nova:
+            # 🛑 Ajustado para o nome que você usa no seu sistema de login
+            if not st.session_state.get("autenticado", False) or st.session_state.usuario_logado is None:
+                st.warning("⚠️ Sessão expirada ou usuário não logado. Por favor, faça o login novamente.")
+                st.stop() 
+        
+            # Se passar daqui, o resto do código funciona!
+            user = st.session_state.usuario_logado
+            email_logado = user['email']
     
         # Se passou da trava acima, o código abaixo funciona sem erro
             st.header("📝 Minhas Ocorrências de Ponto")
@@ -1054,6 +1058,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

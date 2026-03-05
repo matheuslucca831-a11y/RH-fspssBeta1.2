@@ -13,9 +13,12 @@ from passlib.hash import pbkdf2_sha256
 
 def gerar_hash(senha):
     return pbkdf2_sha256.hash(senha)
-
-def verificar_senha(senha, hash_salvo):
-    return pbkdf2_sha256.verify(senha, hash_salvo)
+    
+def verificar_senha(senha_digitada, hash_salvo):
+    try:
+        return pbkdf2_sha256.verify(senha_digitada, hash_salvo)
+    except Exception:
+        return False
     
 # conexão com Supabase
 SUPABASE_URL = "https://zedgyvekirmsqvstqvjt.supabase.co"
@@ -49,17 +52,6 @@ if len(st.session_state.db_usuarios) == 0:
 
     # recarrega usuários
     st.session_state.db_usuarios = carregar_usuarios()
-
-def gerar_hash(senha):
-    # O passlib já devolve uma string, não precisa de .decode()
-    return pbkdf2_sha256.hash(senha)
-
-def verificar_senha(senha_digitada, hash_salvo):
-    # O passlib compara a senha pura com o hash string, não precisa de .encode()
-    try:
-        return pbkdf2_sha256.verify(senha_digitada, hash_salvo)
-    except Exception:
-        return False
     
 
 def salvar_csv(nome_arquivo, dados):
@@ -937,6 +929,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

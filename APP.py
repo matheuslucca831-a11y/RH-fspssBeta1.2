@@ -55,8 +55,6 @@ if len(usuario_existe.data) == 0:
 # recarrega usuários
 st.session_state.db_usuarios = carregar_usuarios()
 
-    # recarrega usuários
-    st.session_state.db_usuarios = carregar_usuarios()
     
 
 def salvar_csv(nome_arquivo, dados):
@@ -934,6 +932,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

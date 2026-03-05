@@ -278,39 +278,35 @@ if not st.session_state.autenticado:
             e_in = st.text_input("Matrícula")
             s_in = st.text_input("(Senha)", type="password")
             if st.button("Entrar", use_container_width=True):
-                # FORÇAR RECARGA: Isso garante que o usuário recém-criado apareça na lista
-                st.session_state.db_usuarios = carregar_usuarios() 
-                
-                # Busca tratando espaços extras (strip)
-                matricula_digitada = str(e_in).strip()
-                
-                u_f = next(
-                    (u for u in st.session_state.db_usuarios 
-                     if str(u.get('email', '')).strip() == matricula_digitada),
-                    None
-                )
+                            # Garante que temos a lista mais recente antes de procurar
+                            st.session_state.db_usuarios = carregar_usuarios() 
+                            
+                            # Busca higienizada (sem espaços e tudo em string)
+                            matricula_digitada = str(e_in).strip()
+                            
+                            u_f = next(
+                                (u for u in st.session_state.db_usuarios 
+                                if str(u.get('email', '')).strip() == matricula_digitada),
+                                None
+                            )
             
-                if u_f:
-                    # LOG DE DEBUG (Apenas para teste, remova depois)
-                    # st.write(f"Usuário encontrado: {u_f['nome']}")
-                    # st.write(f"Hash no banco: {u_f['matricula'][:20]}...") 
-            
-                    if verificar_senha(s_in, u_f['matricula']):
-                        st.session_state.autenticado = True
-                        st.session_state.usuario_logado = u_f
-                        
-                        # Salva no arquivo temporário e cookie
-                        salvar_login(u_f["email"])
-                        
-                        st.success("Login realizado!")
-                        st.rerun()
-                    else:
-                        st.error("Senha incorreta.") # O hash não bateu
-                else:
-                    st.error("Matrícula não encontrada.") # O 'email' não existe na lista
+                            if u_f and verificar_senha(s_in, u_f['matricula']):
+                                st.session_state.autenticado = True
+                                st.session_state.usuario_logado = u_f
+                                
+                                # Salva sessão temporária
+                                salvar_login(u_f["email"])
+                                
+                                st.success("Login realizado!")
+                                st.rerun()
+                            else:
+                                st.error("Matrícula ou senha incorretos.")
 
+# Trava de segurança: Se não autenticou, para o script aqui e não executa o resto
+if not st.session_state.get("autenticado", False) or st.session_state.usuario_logado is None:
+    st.stop()
 
-
+# Só chega aqui se o usuário existir e estiver logado
 user = st.session_state.usuario_logado
 email_logado = user['email']
 
@@ -342,24 +338,23 @@ if user['cargo'] == "Gestor Máximo":
                 n_e = c1.text_input("Matrícula")
                 n_c = c2.selectbox("Cargo", ["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"])
                 if st.form_submit_button("Salvar"):
-                    # n_e é o que o ADM digitou no campo "Matrícula" (que serve de Login)
-                    # n_m é o que o ADM digitou no campo "Senha"
-                    
-                    novo_usuario = {
-                        "email": str(n_e).strip(),           # O LOGIN vai para a coluna 'email'
-                        "nome": n_n,
-                        "cargo": n_c,
-                        "matricula": gerar_hash(str(n_m))    # O HASH DA SENHA vai para a coluna 'matricula'
-                    }
-                
-                    try:
-                        supabase.table("usuarios").insert(novo_usuario).execute()
-                        # RECARGA CRÍTICA: Se não atualizar aqui, o login não "vê" o novo user
-                        st.session_state.db_usuarios = carregar_usuarios() 
-                        st.success(f"Usuário {n_n} cadastrado!")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Erro no Supabase: {e}")
+                                    novo_usuario = {
+                                        "email": str(n_e).strip(), # Matrícula (Login)
+                                        "nome": n_n,
+                                        "cargo": n_c,
+                                        "matricula": gerar_hash(str(n_m)) # Senha (Hash)
+                                    }
+                                
+                                    try:
+                                        supabase.table("usuarios").insert(novo_usuario).execute()
+                                        # --- LINHA CRÍTICA: Atualiza a lista na memória do app ---
+                                        st.session_state.db_usuarios = carregar_usuarios() 
+                                        st.success(f"Usuário {n_n} cadastrado!")
+                                        st.rerun()
+                                
+                                    except Exception as e:
+                                        st.error("Erro ao salvar usuário no Supabase")
+                                        st.write(e)
 
         busca = st.text_input("🔍 Pesquisar:")
         for u in [u for u in st.session_state.db_usuarios if busca.lower() in u['nome'].lower() or busca in str(u.get('matricula', ''))]:
@@ -964,6 +959,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

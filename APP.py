@@ -14,6 +14,26 @@ from passlib.hash import pbkdf2_sha256
 def gerar_hash(senha):
     return pbkdf2_sha256.hash(senha)
     
+def subir_para_storage(arquivo_streamlit):
+    """Sobe o arquivo para o Supabase e retorna a URL pública."""
+    try:
+        # Nome único para o arquivo não sobrescrever outros
+        nome_arquivo = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{arquivo_streamlit.name}"
+        caminho_no_bucket = f"atestados/{nome_arquivo}"
+        
+        # Faz o upload (Certifique-se de ter criado o bucket 'anexos' no Supabase)
+        arquivo_bytes = arquivo_streamlit.getvalue()
+        supabase.storage.from_("anexos").upload(caminho_no_bucket, arquivo_bytes)
+        
+        # Gera a URL pública para salvar na tabela
+        url_publica = supabase.storage.from_("anexos").get_public_url(caminho_no_bucket)
+        return url_publica
+    except Exception as e:
+        st.error(f"Erro no upload do arquivo: {e}")
+        return None
+
+
+
 def verificar_senha(senha_digitada, hash_salvo):
     try:
         return pbkdf2_sha256.verify(senha_digitada, hash_salvo)
@@ -852,70 +872,74 @@ else:
             )
 
             if enviar:
-
                 if data_fim < data_inicio:
                     st.error("Data final menor que inicial")
                     st.stop()
-
+    
                 if mot == "Atestado" and not anexo_f:
                     st.error("Atestado precisa de anexo")
                     st.stop()
-
+    
                 if mot != "Atestado":
-
-
-                    if (
-                        h1 == time(0,0)
-                        and h2 == time(0,0)
-                        and h3 == time(0,0)
-                        and h4 == time(0,0)
-                    ):
+                    if (h1 == time(0,0) and h2 == time(0,0) and h3 == time(0,0) and h4 == time(0,0)):
                         st.error("Preencha pelo menos um horário")
                         st.stop()
-
-                id_g = str(uuid.uuid4())[:8] 
-
-                path_anexo = salvar_anexo(anexo_f, id_g) if anexo_f else ""
-
-                if mot == "Atestado":
-
-                    txt_h = ""
-                    txt_data = f"{data_inicio} até {data_fim}"
-
-                else:
-
-                    txt_h = (
-                        f"{h1.strftime('%H:%M')} | "
-                        f"{h2.strftime('%H:%M')} | "
-                        f"{h3.strftime('%H:%M')} | "
-                        f"{h4.strftime('%H:%M')}"
-                    )
-
-                    txt_data = str(data_inicio)
-
-                nova = {
-                    "id": id_g,
-                    "solicitante": user['nome'],
-                    "email_solicitante": email_logado,
-                    "data": txt_data,
-                    "horarios": txt_h,
-                    "status": "⏳ Pendente",
-                    "arquivado": "Não",
-                    "motivo": mot,
-                    "detalhes": just,
-                    "anexo": path_anexo,
-                    "aprovado_por": ""
-                }
-
-                st.session_state.db_ocorrencias.append(nova)
-
-                salvar_csv(
-                    ARQUIVOS["ocorrencias"],
-                    st.session_state.db_ocorrencias
-                )
-
-                st.success("Solicitação enviada!")
-                st.rerun()
+    
+                # --- NOVA LÓGICA SUPABASE ---
+                
+                with st.spinner("Enviando solicitação..."):
+                    # 1. Tratamento do Anexo (Storage)
+                    link_final_anexo = ""
+                    if anexo_f:
+                        try:
+                            # Nome único para o arquivo
+                            nome_arquivo = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{anexo_f.name}"
+                            caminho_storage = f"atestados/{nome_arquivo}"
+                            
+                            # Upload para o bucket 'anexos'
+                            supabase.storage.from_("anexos").upload(caminho_storage, anexo_f.getvalue())
+                            
+                            # Pega a URL pública
+                            link_final_anexo = supabase.storage.from_("anexos").get_public_url(caminho_storage)
+                        except Exception as e:
+                            st.error(f"Erro ao subir arquivo: {e}")
+                            st.stop()
+    
+                    # 2. Preparação dos Textos (Datas e Horários)
+                    if mot == "Atestado":
+                        txt_h = ""
+                        txt_data = f"{data_inicio} até {data_fim}"
+                    else:
+                        txt_h = f"{h1.strftime('%H:%M')} | {h2.strftime('%H:%M')} | {h3.strftime('%H:%M')} | {h4.strftime('%H:%M')}"
+                        txt_data = str(data_inicio)
+    
+                    # 3. Montagem do Dicionário para o Supabase
+                    # Ajustado conforme as colunas do seu print
+                    nova_ocorrencia = {
+                        "solicitante": user['nome'],
+                        "email_solicita": email_logado,
+                        "data": txt_data,
+                        "horarios": txt_h,
+                        "status": "⏳ Pendente",
+                        "arquivado": "Não",
+                        "motivo": mot,
+                        "detalhes": just,
+                        "anexo": link_final_anexo,
+                        "aprovado_por": ""
+                    }
+    
+                    # 4. Inserção no Banco de Dados
+                    try:
+                        supabase.table("ocorrencias").insert(nova_ocorrencia).execute()
+                        
+                        # Atualiza a lista na memória para refletir a mudança
+                        res = supabase.table("ocorrencias").select("*").execute()
+                        st.session_state.db_ocorrencias = res.data
+                        
+                        st.success("Solicitação enviada para o banco de dados!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao salvar no Supabase: {e}")
 
 
     # ---------------- HISTÓRICO ----------------
@@ -966,6 +990,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

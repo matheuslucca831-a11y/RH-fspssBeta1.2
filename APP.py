@@ -311,13 +311,20 @@ user = st.session_state.usuario_logado
 email_logado = user['email']
 
 if st.sidebar.button("🚪 Sair", key="logout_btn"):
+    # 1. Limpa o estado da memória
     st.session_state.autenticado = False
     st.session_state.usuario_logado = None
     
-    cookies["usuario"] = ""
-    cookies["login_time"] = ""
-    cookies.save()
+    # 2. Deleta o arquivo de login temporário (ESSENCIAL)
+    apagar_login() 
     
+    # 3. Limpa os cookies (se estiver usando a biblioteca de cookies)
+    if 'cookies' in locals():
+        cookies["usuario"] = ""
+        cookies["login_time"] = ""
+        cookies.save()
+    
+    # 4. Reinicia o app limpo
     st.rerun()
 
 st.title(f"Olá, {user['nome']}!")
@@ -959,6 +966,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

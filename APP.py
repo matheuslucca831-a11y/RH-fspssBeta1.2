@@ -16,7 +16,7 @@ def gerar_hash(senha):
     
 # conexão com Supabase
 SUPABASE_URL = "https://zedgyvekirmsqvstqvjt.supabase.co"
-SUPABASE_KEY = "sb_publishable_CMyfROBsVOztTMfSDwX_zA_Tl4m3aaw"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZGd5dmVraXJtc3F2c3Rxdmp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2Nzg0NzgsImV4cCI6MjA4ODI1NDQ3OH0.rjJFysv6U7skPJ1UDPDysgTNpdAHSYxT0gxl_C5pDn8"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -934,4 +934,5 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 

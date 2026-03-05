@@ -973,18 +973,16 @@ else:
                         txt_data = str(data_inicio)
     
                     # 3. Montagem do Dicionário para o Supabase
-                    # Ajustado conforme as colunas do seu print
                     nova_ocorrencia = {
-                        "solicitante": st.session_state.usuario['nome'] if 'usuario' in st.session_state else "Usuário Desconhecido",
-                        "email_solicita": st.session_state.usuario['email'] if 'usuario' in st.session_state else "Sem Matrícula",
+                        "solicitante": st.session_state.usuario.get('nome'),
+                        "email_solicitante": st.session_state.usuario.get('email'), # Nome exato da foto image_077047.png
                         "data": txt_data,
-                        "horarios": txt_h,
-                        "status": "⏳ Pendente",
-                        "arquivado": "Não",
                         "motivo": mot,
+                        "status": "⏳ Pendente",
                         "detalhes": just,
+                        "horarios": txt_h, # Plural conforme image_07711b.png
                         "anexo": link_final_anexo,
-                        "aprovado_por": ""
+                        "arquivado": "Não"
                     }
     
                     # 4. Inserção no Banco de Dados
@@ -1049,6 +1047,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

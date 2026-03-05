@@ -19,13 +19,13 @@ def carregar_vinculos():
         res = supabase.table("vinculos").select("*").execute()
         vinc_dict = {}
         for r in res.data:
-            # Forçamos tudo para String para não dar erro entre '1' e 1
-            lider = str(r['lider']).strip()
-            liderado = str(r['liderado']).strip()
+            # Forçamos para string para garantir o match com o input da tela
+            l = str(r['lider']).strip()
+            ld = str(r['liderado']).strip()
             
-            if lider not in vinc_dict:
-                vinc_dict[lider] = []
-            vinc_dict[lider].append(liderado)
+            if l not in vinc_dict:
+                vinc_dict[l] = []
+            vinc_dict[l].append(ld)
         return vinc_dict
     except Exception as e:
         return {}
@@ -1053,6 +1053,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

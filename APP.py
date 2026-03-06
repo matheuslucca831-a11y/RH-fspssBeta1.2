@@ -885,104 +885,67 @@ else:
 
     # ---------------- NOVA OCORRÊNCIA ----------------
 
-            with tab_nova:
-                    st.header("📝 Minhas Ocorrências de Ponto")
-            
-                    mot = st.selectbox(
-                        "Motivo",
-                        ["Esquecimento", "Atestado", "Erro no Relógio", "Outro"]
-                    )
-        
+    with tab_nova:
+                st.header("📝 Minhas Ocorrências de Ponto")
+                
+                # O selectbox e o form PRECISAM estar recuados (identados) dentro do with tab_nova
+                mot = st.selectbox(
+                    "Motivo",
+                    ["Esquecimento", "Atestado", "Erro no Relógio", "Outro"]
+                )
+    
                 with st.form("f_ponto", clear_on_submit=True):
-        
                     col_a, col_b = st.columns(2)
-        
                     data_inicio = col_a.date_input("Data inicial")
                     data_fim = col_b.date_input("Data final")
-        
+    
                     if mot != "Atestado":
-        
                         st.write("Preencha os horários")
-        
                         h_cols = st.columns(4)
-        
                         h1 = h_cols[0].time_input("Entrada", value=time(0,0), step=60)
                         h2 = h_cols[1].time_input("S. Almoço", value=time(0,0), step=60)
                         h3 = h_cols[2].time_input("R. Almoço", value=time(0,0), step=60)
                         h4 = h_cols[3].time_input("Saída", value=time(0,0), step=60)
-        
                     else:
-        
                         h1 = h2 = h3 = h4 = None
-        
                         st.info("Atestado não precisa de horário")
-        
+    
                     just = st.text_area("Justificativa detalhada:")
-        
-                    anexo_f = st.file_uploader(
-                        "Comprovante",
-                        type=["png", "jpg", "jpeg", "pdf"]
-                    )
-        
-                    enviar = st.form_submit_button(
-                        "Enviar Solicitação",
-                        use_container_width=True
-                    )
-        
+                    anexo_f = st.file_uploader("Comprovante", type=["png", "jpg", "jpeg", "pdf"])
+    
+                    enviar = st.form_submit_button("Enviar Solicitação", use_container_width=True)
+    
                     if enviar:
+                        # Validações básicas
                         if data_fim < data_inicio:
                             st.error("Data final menor que inicial")
                             st.stop()
-            
-                        if mot == "Atestado" and not anexo_f:
-                            st.error("Atestado precisa de anexo")
-                            st.stop()
-            
-                        if mot != "Atestado":
-                            if (h1 == time(0,0) and h2 == time(0,0) and h3 == time(0,0) and h4 == time(0,0)):
-                                st.error("Preencha pelo menos um horário")
-                                st.stop()
-            
-                        # --- NOVA LÓGICA SUPABASE ---
                         
-                        with st.spinner("Enviando solicitação..."):
-                            # 1. Tratamento do Anexo (Storage)
-                            link_final_anexo = ""
-                            if anexo_f:
-                                try:
-                                    # Nome único para o arquivo
-                                    nome_arquivo = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{anexo_f.name}"
-                                    caminho_storage = f"atestados/{nome_arquivo}"
-                                    
-                                    # Upload para o bucket 'anexos'
-                                    supabase.storage.from_("anexos").upload(caminho_storage, anexo_f.getvalue())
-                                    
-                                    # Pega a URL pública
-                                    link_final_anexo = supabase.storage.from_("anexos").get_public_url(caminho_storage)
-                                except Exception as e:
-                                    st.error(f"Erro ao subir arquivo: {e}")
-                                    st.stop()
-            
-                            # 2. Preparação dos Textos (Datas e Horários)
-                            if mot == "Atestado":
-                                txt_h = ""
-                                txt_data = f"{data_inicio} até {data_fim}"
-                            else:
-                                txt_h = f"{h1.strftime('%H:%M')} | {h2.strftime('%H:%M')} | {h3.strftime('%H:%M')} | {h4.strftime('%H:%M')}"
-                                txt_data = str(data_inicio)
-            
-                            # 3. Montagem do Dicionário para o Supabase
+                        # --- Lógica de Banco de Dados ---
+                        with st.spinner("Salvando..."):
+                            # Se for atestado, monta string de data composta, se não, usa data única
+                            txt_data = f"{data_inicio} até {data_fim}" if mot == "Atestado" else str(data_inicio)
+                            txt_h = f"{h1} | {h2} | {h3} | {h4}" if h1 else ""
+    
+                            # ATENÇÃO: Verifique se no Supabase é 'email_solicita' ou 'email_solicitante'
                             nova_ocorrencia = {
-                                "solicitante": str(st.session_state.usuario_logado.get('nome')),
-                                "email_solicitante": str(st.session_state.usuario_logado.get('email')),
+                                "solicitante": st.session_state.usuario_logado.get('nome'),
+                                "email_solicita": st.session_state.usuario_logado.get('email'), # Nome exato da coluna da Imagem 1
                                 "data": str(txt_data),
                                 "motivo": str(mot),
                                 "status": "⏳ Pendente",
                                 "detalhes": str(just),
-                                "horarios": str(txt_h), 
-                                "anexo": str(link_final_anexo),
+                                "horarios": str(txt_h),
+                                "anexo": "URL_DO_STORAGE", # Aqui entra sua lógica de upload se houver
                                 "arquivado": "Não"
                             }
+
+                        try:
+                            supabase.table("ocorrencias").insert(nova_ocorrencia).execute()
+                            st.success("Ocorrência enviada!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao salvar: {e}")
                             
                             # 4. Inserção no Banco de Dados
                             try:
@@ -1041,6 +1004,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

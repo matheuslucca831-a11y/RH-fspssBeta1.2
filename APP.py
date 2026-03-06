@@ -885,8 +885,7 @@ else:
 
     # ---------------- NOVA OCORRÊNCIA ----------------
 
-        with tab_nova:
-    
+    with tab_nova:
             st.header("📝 Minhas Ocorrências de Ponto")
     
             mot = st.selectbox(
@@ -1042,6 +1041,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

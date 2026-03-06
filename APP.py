@@ -919,11 +919,9 @@ else:
                     anexo_f = st.file_uploader("Comprovante", type=["png", "jpg", "jpeg", "pdf"])
     
                     enviar = st.form_submit_button("Enviar Solicitação", use_container_width=True)
-                    # --- LÓGICA DE UPLOAD DE ANEXO ---
-                    link_final_anexo = supabase.storage.from_("anexos").get_public_url(caminho_storage)   
+                  
+                 
 
-
-                    st.stop()
 
 
                     if enviar:
@@ -1038,6 +1036,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

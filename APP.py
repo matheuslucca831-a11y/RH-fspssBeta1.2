@@ -858,20 +858,15 @@ else:
                         # Visualização e Download do Anexo na Aprovação
                         if oc.get('anexo'):
                             with c_inf:
-                                with st.popover("👁️ Visualizar", use_container_width=True):
-                                    exibir_anexo(oc["anexo"])
-
-                                try:
-                                    with open(oc['anexo'], "rb") as f:
-                                        st.download_button(
-                                            "📁 Baixar",
-                                            f,
-                                            file_name=os.path.basename(oc['anexo']),
-                                            key=f"dl_apr_{oc['id']}",
-                                            use_container_width=True
-                                        )
-                                except:
-                                    st.error("Arquivo não encontrado")
+                                # Coluna de botões para o anexo
+                                col_view, col_down = st.columns(2)
+                                
+                                # 1. Botão para Abrir/Visualizar (Melhor do que o Popover para links externos)
+                                col_view.link_button("👁️ Visualizar", oc["anexo"], use_container_width=True)
+                        
+                                # 2. Botão de Download (Direto via Link)
+                                # Nota: O link_button já permite que o supervisor baixe o arquivo ao abrir
+                                col_down.link_button("📁 Baixar", oc["anexo"], use_container_width=True)
 
                         # Lógica de Aprovação/Negação
                         if oc['email_solicitante'] != email_logado:
@@ -1036,6 +1031,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

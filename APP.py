@@ -948,6 +948,14 @@ else:
                             st.rerun()
                         except Exception as e:
                             st.error(f"Erro ao salvar: {e}")
+                            # ... (dentro do try do insert)
+                        if resultado.data:
+                            st.success("✅ Ocorrência salva!")
+                            
+                            # IMPORTANTE: Recarrega os dados na memória do Streamlit
+                            st.session_state.db_ocorrencias = carregar_ocorrencias() 
+                            
+                            st.rerun() # Atualiza a tela para mostrar a nova linha no Histórico
                             
                             # 4. Inserção no Banco de Dados
                             try:
@@ -1006,6 +1014,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

@@ -679,46 +679,29 @@ if user['cargo'] == "Gestor Máximo":
                                     st.write(o["detalhes"])
 
                             # --- DENTRO DO SEU LOOP DE OCORRÊNCIAS ---
+                            # --- BLOCO DE ANEXO NO MONITORAMENTO GERAL ---
                             if o.get("anexo"):
-                                st.divider() # Uma linha divisória
+                                st.divider()
                                 
-                                # Em vez de colunas pequenas, usamos um expander que ocupa a largura toda
+                                # Expander para visualização direta
                                 with st.expander("🖼️ Visualizar Documento (Atestado/Comprovante)", expanded=False):
                                     exibir_anexo(o["anexo"])
                                 
-                                # Deixamos apenas o botão de baixar em uma coluna menor se desejar
+                                # Botão de Download Real usando Requests
                                 try:
-                                    with open(o["anexo"], "rb") as f:
-                                        st.download_button(
-                                            label="📁 Baixar Arquivo Original",
-                                            data=f,
-                                            file_name=os.path.basename(o["anexo"]),
-                                            key=f"dl_full_{o['id']}",
-                                            use_container_width=True
-                                        )
-                                except:
-                                    st.error("Erro ao carregar arquivo para download.")
-                            # Botões de Ação (Arquivar e Excluir)
-                            if c2.button("📦 Arquivar", key=f"arq_filt_{o['id']}", use_container_width=True):
-                                try:
-                                    # Atualiza a coluna 'arquivado' para 'Sim' no registro com esse ID
-                                    supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", o['id']).execute()
-                                    st.session_state.db_ocorrencias = carregar_ocorrencias()
-                                    st.rerun()
-                                except Exception as e:
-                                    st.error(f"Erro ao arquivar: {e}")
+                                    conteudo_binario = requests.get(o["anexo"]).content
+                                    nome_arquivo = o["anexo"].split("/")[-1]
 
-                            if c2.button("🗑️ Excluir", key=f"exc_adm_{o['id']}", use_container_width=True):
-                                try:
-                                    # Remove fisicamente do banco de dados
-                                    supabase.table("ocorrencias").delete().eq("id", o['id']).execute()
-                                    st.session_state.db_ocorrencias = carregar_ocorrencias()
-                                    st.rerun()
+                                    st.download_button(
+                                        label="📁 Baixar Arquivo Original",
+                                        data=conteudo_binario,
+                                        file_name=nome_arquivo,
+                                        mime="application/octet-stream",
+                                        key=f"dl_full_{o['id']}",
+                                        use_container_width=True
+                                    )
                                 except Exception as e:
-                                    st.error(f"Erro ao excluir: {e}")
-        else:
-            st.info("Sem registros no banco de dados.")
-
+                                    st.error("Erro ao carregar arquivo do banco de dados.")
     with t_arq:
         st.subheader("📦 Arquivo Morto - Ocorrências Arquivadas")
 
@@ -777,12 +760,27 @@ if user['cargo'] == "Gestor Máximo":
                                 st.write(o["detalhes"])
 
                         # Download de anexo, se houver
+                        # --- BLOCO DE ANEXO NO ARQUIVO MORTO ---
                         if o.get("anexo"):
                             st.divider()
                             with st.expander("🖼️ Visualizar Documento", expanded=False):
-                                # O link do Supabase é exibido diretamente
-                                st.image(o["anexo"], caption="Documento Enviado")
-                                st.link_button("🔗 Abrir original em nova aba", o["anexo"], use_container_width=True)
+                                # Usando a função exibir_anexo para manter o padrão
+                                exibir_anexo(o["anexo"])
+                            
+                            try:
+                                # Força o download do arquivo do Supabase
+                                dados = requests.get(o["anexo"]).content
+                                nome_arq = o["anexo"].split("/")[-1]
+
+                                st.download_button(
+                                    label="📁 Baixar Original",
+                                    data=dados,
+                                    file_name=nome_arq,
+                                    key=f"dl_arq_morto_{o['id']}",
+                                    use_container_width=True
+                                )
+                            except:
+                                st.error("Arquivo indisponível para download.")
 
                         # Botão para reativar
                         if st.button("📤 Reativar", key=f"re_{o['id']}"):
@@ -1075,6 +1073,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

@@ -780,14 +780,14 @@ if user['cargo'] == "Gestor Máximo":
 
                         # Botão para reativar
                         if st.button("📤 Reativar", key=f"re_{o['id']}"):
-                            for item in st.session_state.db_ocorrencias:
-                                if str(item['id']) == str(o['id']):
-                                    item['arquivado'] = "Não"
-                            salvar_csv(ARQUIVOS["ocorrencias"], st.session_state.db_ocorrencias)
-                            st.success("Ocorrência reativada!")
-                            st.rerun()
-        else:
-            st.info("Nenhum registro arquivado.")
+                            try:
+                                supabase.table("ocorrencias").update({"arquivado": "Não"}).eq("id", o['id']).execute()
+                                st.session_state.db_ocorrencias = carregar_ocorrencias() # Recarrega do banco
+                                st.success("Ocorrência reativada!")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro ao reativar: {e}")
+
 # --------------------------------------------------
 # 6. VISÃO OPERACIONAL (ENFERMEIRO, SUPERVISOR, FUNCIONÁRIO)
 # --------------------------------------------------
@@ -986,29 +986,29 @@ else:
     
                     # 3. Montagem do Dicionário para o Supabase
                     nova_ocorrencia = {
-                        "solicitante": st.session_state.usuario_logado.get('nome'),
-                        "email_solicitante": st.session_state.usuario_logado.get('email'), # Nome da coluna que vimos na foto
-                        "data": txt_data,
-                        "motivo": mot,
+                        "solicitante": str(st.session_state.usuario_logado.get('nome')),
+                        "email_solicitante": str(st.session_state.usuario_logado.get('email')),
+                        "data": str(txt_data),
+                        "motivo": str(mot),
                         "status": "⏳ Pendente",
-                        "detalhes": just,
-                        "horarios": txt_h, # Plural conforme a foto
-                        "anexo": link_final_anexo,
+                        "detalhes": str(just),
+                        "horarios": str(txt_h), 
+                        "anexo": str(link_final_anexo),
                         "arquivado": "Não"
                     }
-    
+                    
                     # 4. Inserção no Banco de Dados
                     try:
-                        supabase.table("ocorrencias").insert(nova_ocorrencia).execute()
+                        # O .execute() é essencial para disparar a query
+                        response = supabase.table("ocorrencias").insert(nova_ocorrencia).execute()
                         
-                        # Atualiza a lista na memória para refletir a mudança
-                        res = supabase.table("ocorrencias").select("*").execute()
-                        st.session_state.db_ocorrencias = res.data
-                        
-                        st.success("Solicitação enviada para o banco de dados!")
-                        st.rerun()
+                        if response.data:
+                            st.success("✅ Solicitação salva com sucesso!")
+                            # Força a recarga dos dados na memória
+                            st.session_state.db_ocorrencias = carregar_ocorrencias() 
+                            st.rerun()
                     except Exception as e:
-                        st.error(f"Erro ao salvar no Supabase: {e}")
+                        st.error(f"❌ Erro no Supabase: {e}")
 
 
     # ---------------- HISTÓRICO ----------------
@@ -1039,26 +1039,22 @@ else:
                                 st.write(o["detalhes"])
 
                     # Lógica do botão de exclusão/cancelamento
-                    if o.get('status') == "⏳ Pendente":
-                        if col_btn.button("🗑️ Cancelar", key=f"canc_user_{o['id']}", help="Remover solicitação pendente", use_container_width=True):
-                            st.session_state.db_ocorrencias = [item for item in st.session_state.db_ocorrencias if str(item['id']) != str(o['id'])]
-                            salvar_csv(ARQUIVOS["ocorrencias"], st.session_state.db_ocorrencias)
+                    if col_btn.button("🗑️ Cancelar", key=f"canc_user_{o['id']}"):
+                        try:
+                            supabase.table("ocorrencias").delete().eq("id", o['id']).execute()
+                            st.session_state.db_ocorrencias = carregar_ocorrencias()
                             st.success("Solicitação cancelada.")
                             st.rerun()
-                    else:
-                        # Se já foi aprovado ou negado, o botão some e aparece o cadeado
-                        col_btn.write("🔒 *Processado*")
+                        except Exception as e:
+                            st.error(f"Erro ao cancelar: {e}")
 
                     # Download do anexo
                     if o.get("anexo"):
-                        try:
-                            with open(o["anexo"], "rb") as f:
-                                st.download_button("📁 Baixar Anexo", f, file_name=os.path.basename(o["anexo"]), key=f"h_{o['id']}")
-                        except:
-                            st.warning("Anexo não encontrado")
+                        st.link_button("📁 Baixar Arquivo", o["anexo"], use_container_width=True)
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

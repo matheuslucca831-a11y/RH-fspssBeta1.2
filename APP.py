@@ -869,18 +869,25 @@ else:
                                 col_down.link_button("📁 Baixar", oc["anexo"], use_container_width=True)
 
                         # Lógica de Aprovação/Negação
-                        if oc['email_solicitante'] != email_logado:
-                            if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
-                                oc['status'] = "✅ Aprovado"
-                                oc['aprovado_por'] = user['nome']
-                                salvar_csv(ARQUIVOS["ocorrencias"], st.session_state.db_ocorrencias)
+                        if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
+                            try:
+                                # Atualiza no Supabase
+                                supabase.table("ocorrencias").update({"status": "✅ Aprovado", "aprovado_por": user['nome']}).eq("id", oc['id']).execute()
+                                st.success("Aprovado!")
+                                st.session_state.db_ocorrencias = carregar_ocorrencias() # Recarrega a lista atualizada
                                 st.rerun()
-
-                            if c_no.button("❌ Negar", key=f"apr_no_{oc['id']}", use_container_width=True):
-                                oc['status'] = "❌ Negado"
-                                oc['aprovado_por'] = user['nome']
-                                salvar_csv(ARQUIVOS["ocorrencias"], st.session_state.db_ocorrencias)
+                            except Exception as e:
+                                st.error(f"Erro ao aprovar: {e}")
+                        
+                        if c_no.button("❌ Negar", key=f"apr_no_{oc['id']}", use_container_width=True):
+                            try:
+                                # Atualiza no Supabase
+                                supabase.table("ocorrencias").update({"status": "❌ Negado", "aprovado_por": user['nome']}).eq("id", oc['id']).execute()
+                                st.warning("Negado!")
+                                st.session_state.db_ocorrencias = carregar_ocorrencias() # Recarrega a lista atualizada
                                 st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro ao negar: {e}")
 
 
     # ---------------- NOVA OCORRÊNCIA ----------------
@@ -1031,6 +1038,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

@@ -1048,11 +1048,34 @@ else:
                             st.error(f"Erro ao cancelar: {e}")
 
                     # Download do anexo
+                    # --- NOVO BLOCO DE ANEXOS ---
                     if o.get("anexo"):
-                        st.link_button("📁 Baixar Arquivo", o["anexo"], use_container_width=True)
+                        # Cria duas colunas para os botões ficarem lado a lado
+                        col_v, col_d = st.columns(2)
+                        
+                        # Botão 1: Apenas abre o link para ver
+                        col_v.link_button("👁️ Visualizar", o["anexo"], use_container_width=True)
+
+                        # Botão 2: Baixa o arquivo de verdade para o PC
+                        try:
+                            # Faz a requisição para pegar os dados do arquivo na web
+                            conteudo_arquivo = requests.get(o["anexo"]).content
+                            nome_exibicao = o["anexo"].split("/")[-1] # Pega o final da URL como nome
+
+                            col_d.download_button(
+                                label="📁 Baixar Arquivo",
+                                data=conteudo_arquivo,
+                                file_name=nome_exibicao,
+                                mime="application/octet-stream",
+                                key=f"dl_user_{o['id']}", # Identificador único para cada linha
+                                use_container_width=True
+                            )
+                        except Exception as e:
+                            col_d.error("Erro ao processar download")
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

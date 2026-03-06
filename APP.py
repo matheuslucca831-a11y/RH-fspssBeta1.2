@@ -886,19 +886,7 @@ else:
     # ---------------- NOVA OCORRÊNCIA ----------------
 
         with tab_nova:
-            # 🛑 Alinhando com o seu código de autenticação:
-            if not st.session_state.get("autenticado", False) or st.session_state.usuario_logado is None:
-                st.warning("⚠️ Por favor, faça o login para acessar esta aba.")
-                st.stop() 
-        
-            # Se o código chegar aqui, a aba volta a aparecer!
-            user = st.session_state.usuario_logado
-            
-            st.header("📝 Minhas Ocorrências de Ponto")
     
-        # Se passou da trava acima, o código abaixo funciona sem erro
-            st.header("📝 Minhas Ocorrências de Ponto")
-        
             st.header("📝 Minhas Ocorrências de Ponto")
     
             mot = st.selectbox(
@@ -1054,6 +1042,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

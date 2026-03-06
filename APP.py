@@ -692,6 +692,21 @@ if user['cargo'] == "Gestor Máximo":
                                     except:
                                         st.error("Erro ao baixar")
 
+        # --- BOTÃO DE ARQUIVAR (Para colocar dentro do loop do Gestor Máximo) ---
+                            if c2.button("📦 Arquivar", key=f"arq_gestor_{o['id']}", use_container_width=True):
+                                try:
+                                    # 1. Atualiza a coluna 'arquivado' para 'Sim' no Supabase
+                                    supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", o['id']).execute()
+                                    
+                                    # 2. Atualiza o estado local para refletir a mudança
+                                    st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                    
+                                    # 3. Mensagem de sucesso e recarregamento da página
+                                    st.success("Ocorrência movida para o arquivo!")
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Erro ao arquivar no banco: {e}")
+
         # --- GARANTIR QUE TODOS OS REGISTROS TENHAM 'arquivado' ---
         for item in st.session_state.db_ocorrencias:
             if "arquivado" not in item or item["arquivado"] == "":
@@ -1065,6 +1080,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

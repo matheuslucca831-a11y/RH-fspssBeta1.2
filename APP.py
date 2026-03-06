@@ -922,73 +922,78 @@ else:
                     # --- LÓGICA DE UPLOAD DE ANEXO ---
                     link_final_anexo = supabase.storage.from_("anexos").get_public_url(caminho_storage)   
 
-                    if anexo_f: # Só entra aqui se o usuário selecionou um arquivo
+
+                            st.stop()
+
+
+if enviar:
+                # 1. Validações básicas
+                if data_fim < data_inicio:
+                    st.error("Data final menor que inicial")
+                    st.stop()
+                
+                if mot == "Atestado" and not anexo_f:
+                    st.error("Para atestados, o comprovante é obrigatório.")
+                    st.stop()
+
+                with st.spinner("Processando..."):
+                    # --- LÓGICA DO ANEXO ---
+                    link_final_anexo = "" # Inicializa vazio para evitar NameError
+                    
+                    if anexo_f:
                         try:
-                            # 2. Defina o caminho_storage AQUI dentro
+                            # Define o nome e o caminho dentro do IF
                             nome_arquivo = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{anexo_f.name}"
                             caminho_storage = f"atestados/{nome_arquivo}"
                             
-                            # 3. Faz o upload
+                            # Faz o upload para o bucket 'anexos'
                             supabase.storage.from_("anexos").upload(
                                 path=caminho_storage, 
                                 file=anexo_f.getvalue(),
                                 file_options={"content-type": anexo_f.type}
                             )
                             
-                            # 4. AGORA você busca a URL pública usando a variável que acabou de criar
+                            # Agora que caminho_storage existe, gera a URL
                             link_final_anexo = supabase.storage.from_("anexos").get_public_url(caminho_storage)
-                            
                         except Exception as e:
-                            st.error(f"Erro no upload: {e}")
+                            st.error(f"Erro no upload do arquivo: {e}")
                             st.stop()
 
+                    # --- PREPARAÇÃO DOS DADOS PARA O BANCO ---
+                    txt_data = f"{data_inicio} até {data_fim}" if mot == "Atestado" else str(data_inicio)
+                    
+                    # Formata horários ou define como integral
+                    if h1 is not None:
+                        txt_h = f"{h1.strftime('%H:%M')} | {h2.strftime('%H:%M')} | {h3.strftime('%H:%M')} | {h4.strftime('%H:%M')}"
+                    else:
+                        txt_h = "Atestado / Integral"
 
-                    if enviar:
-                        # Validações básicas
-                        if data_fim < data_inicio:
-                            st.error("Data final menor que inicial")
-                            st.stop()
+                    # Montagem do dicionário (Verifique se é 'email_solicitante' ou 'email_solicita')
+                    nova_ocorrencia = {
+                        "solicitante": str(st.session_state.usuario_logado.get('nome')),
+                        "email_solicitante": str(st.session_state.usuario_logado.get('email')),
+                        "data": str(txt_data),
+                        "motivo": str(mot),
+                        "status": "⏳ Pendente",
+                        "detalhes": str(just),
+                        "horarios": str(txt_h),
+                        "arquivado": "Não",
+                        "anexo": str(link_final_anexo) 
+                    }
+
+                    # --- EXECUÇÃO DO SALVAMENTO ---
+                    try:
+                        response = supabase.table("ocorrencias").insert(nova_ocorrencia).execute()
                         
-                        # --- Lógica de Banco de Dados ---
-                        with st.spinner("Salvando..."):
-                            # Se for atestado, monta string de data composta, se não, usa data única
-                            txt_data = f"{data_inicio} até {data_fim}" if mot == "Atestado" else str(data_inicio)
-                            txt_h = f"{h1} | {h2} | {h3} | {h4}" if h1 else ""
-    
-                            # ATENÇÃO: Verifique se no Supabase é 'email_solicita' ou 'email_solicitante'
-                            nova_ocorrencia = {
-                                "solicitante": st.session_state.usuario_logado.get('nome'),
-                                "email_solicitante": st.session_state.usuario_logado.get('email'), # Nome exato da coluna da Imagem 1
-                                "data": str(txt_data),
-                                "motivo": str(mot),
-                                "status": "⏳ Pendente",
-                                "detalhes": str(just),
-                                "horarios": str(txt_h),
-                                "arquivado": "Não",
-                                "anexo": str(link_final_anexo) # <--- AGORA SALVA O LINK REAL
-                            }
-
-                # --- EXECUÇÃO DO SALVAMENTO ---
-                        try:
-                            # 1. Dispara a query e guarda o retorno na variável 'response'
-                            response = supabase.table("ocorrencias").insert(nova_ocorrencia).execute()
-                            
-                            # 2. Verifica se o banco confirmou o salvamento (se há dados no retorno)
-                            if response.data:
-                                st.success("✅ Solicitação salva com sucesso!")
-                                
-                                # 3. Atualiza a lista de ocorrências na memória para o histórico
-                                st.session_state.db_ocorrencias = carregar_ocorrencias() 
-                                
-                                # 4. Reinicia o app para limpar o formulário e mostrar os dados novos
-                                st.rerun()
-                            else:
-                                st.error("Erro: O banco não confirmou o recebimento dos dados.")
-        
-                        except Exception as e:
-                            # Captura erros de conexão, colunas erradas ou permissão
-                            st.error(f"❌ Erro ao salvar no Supabase: {e}")
-
+                        if response.data:
+                            st.success("✅ Solicitação salva com sucesso!")
+                            # Atualiza a memória local para o histórico aparecer na hora
+                            st.session_state.db_ocorrencias = carregar_ocorrencias() 
+                            st.rerun()
+                        else:
+                            st.error("Erro: O banco não retornou confirmação.")
+                    except Exception as e:
+                        st.error(f"❌ Erro ao salvar no Supabase: {e}")
 
     # ---------------- HISTÓRICO ----------------
 
@@ -1033,6 +1038,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

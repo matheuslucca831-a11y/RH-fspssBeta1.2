@@ -920,9 +920,10 @@ else:
     
                     enviar = st.form_submit_button("Enviar Solicitação", use_container_width=True)
                     # --- LÓGICA DE UPLOAD DE ANEXO ---
-                    link_final_anexo = "" # Começa vazio
-                    
+                    link_final_anexo = supabase.storage.from_("anexos").get_public_url(caminho_storage)   
+
                     if anexo_f:
+                        
                         try:
                             # 1. Gera um nome único (Ex: 20260305_1530_comprovante.pdf)
                             nome_arquivo = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{anexo_f.name}"
@@ -1033,6 +1034,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

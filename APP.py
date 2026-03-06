@@ -926,7 +926,7 @@ else:
                             st.stop()
 
 
-if enviar:
+                if enviar:
                 # 1. Validações básicas
                 if data_fim < data_inicio:
                     st.error("Data final menor que inicial")
@@ -1038,6 +1038,7 @@ if enviar:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

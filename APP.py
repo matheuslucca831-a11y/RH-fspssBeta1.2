@@ -149,16 +149,8 @@ def exibir_anexo(url):
         st.warning("Nenhum anexo disponível.")
         return
 
-    # Se for imagem, o Streamlit exibe direto pela URL
-    if any(url.lower().endswith(ext) for ext in [".png", ".jpg", ".jpeg"]):
-        st.image(url, use_container_width=True)
-    
-    # Se for PDF, o navegador precisa de um link ou um iframe
-    elif url.lower().endswith(".pdf"):
-        st.markdown(f'<iframe src="{url}" width="100%" height="600px"></iframe>', unsafe_allow_html=True)
-    
-    else:
-        st.link_button("🔗 Abrir anexo em nova aba", url, use_container_width=True)
+    # Em vez de tentar mostrar aqui dentro, damos o botão para abrir fora
+    st.link_button("📂 Abrir Documento em Nova Aba", url, use_container_width=True)
 
 def formatar_status(status):
     cores = {
@@ -674,26 +666,31 @@ if user['cargo'] == "Gestor Máximo":
                             # --- DENTRO DO SEU LOOP DE OCORRÊNCIAS ---
                             # --- BLOCO DE ANEXO NO MONITORAMENTO GERAL ---
                             # --- NOVO BLOCO DE VISUALIZAÇÃO ---
+                            # --- BLOCO DE ANEXO ATUALIZADO ---
                             if o.get("anexo"):
                                 st.divider()
-                                with st.expander("🖼️ Visualizar Documento (Atestado/Comprovante)", expanded=False):
-                                    # Aqui chamamos a função atualizada que aceita URL
+                                
+                                # Criamos duas colunas para os botões ficarem elegantes
+                                col_ver, col_baixar = st.columns(2)
+                                
+                                with col_ver:
+                                    # Abre em outra guia (Resolve o bloqueio do Chrome)
                                     exibir_anexo(o["anexo"])
                                 
-                                # O seu botão de download que já está funcionando (com requests) vem logo abaixo
-                                try:
-                                    conteudo_binario = requests.get(o["anexo"]).content
-                                    nome_arquivo = o["anexo"].split("/")[-1]
-                                    st.download_button(
-                                        label="📁 Baixar Arquivo Original",
-                                        data=conteudo_binario,
-                                        file_name=nome_arquivo,
-                                        key=f"dl_full_view_{o['id']}",
-                                        use_container_width=True
-                                    )
-                                except:
-                                    st.error("Erro ao preparar download.")
-                                    st.subheader("📦 Arquivo Morto - Ocorrências Arquivadas")
+                                with col_baixar:
+                                    # Mantém o seu download direto que já funciona
+                                    try:
+                                        conteudo_bin = requests.get(o["anexo"]).content
+                                        nome_arq = o["anexo"].split("/")[-1]
+                                        st.download_button(
+                                            label="📥 Baixar Arquivo",
+                                            data=conteudo_bin,
+                                            file_name=nome_arq,
+                                            key=f"dl_gestor_{o['id']}",
+                                            use_container_width=True
+                                        )
+                                    except:
+                                        st.error("Erro ao baixar")
 
         # --- GARANTIR QUE TODOS OS REGISTROS TENHAM 'arquivado' ---
         for item in st.session_state.db_ocorrencias:
@@ -753,24 +750,29 @@ if user['cargo'] == "Gestor Máximo":
                         # --- BLOCO DE ANEXO NO ARQUIVO MORTO ---
                         # --- NOVO BLOCO DE VISUALIZAÇÃO ---
                         if o.get("anexo"):
-                            st.divider()
-                            with st.expander("🖼️ Visualizar Documento (Atestado/Comprovante)", expanded=False):
-                                # Aqui chamamos a função atualizada que aceita URL
-                                exibir_anexo(o["anexo"])
-                            
-                            # O seu botão de download que já está funcionando (com requests) vem logo abaixo
-                            try:
-                                conteudo_binario = requests.get(o["anexo"]).content
-                                nome_arquivo = o["anexo"].split("/")[-1]
-                                st.download_button(
-                                    label="📁 Baixar Arquivo Original",
-                                    data=conteudo_binario,
-                                    file_name=nome_arquivo,
-                                    key=f"dl_full_view_{o['id']}",
-                                    use_container_width=True
-                                )
-                            except:
-                                st.error("Erro ao preparar download.")
+                                st.divider()
+                                
+                                # Criamos duas colunas para os botões ficarem elegantes
+                                col_ver, col_baixar = st.columns(2)
+                                
+                                with col_ver:
+                                    # Abre em outra guia (Resolve o bloqueio do Chrome)
+                                    exibir_anexo(o["anexo"])
+                                
+                                with col_baixar:
+                                    # Mantém o seu download direto que já funciona
+                                    try:
+                                        conteudo_bin = requests.get(o["anexo"]).content
+                                        nome_arq = o["anexo"].split("/")[-1]
+                                        st.download_button(
+                                            label="📥 Baixar Arquivo",
+                                            data=conteudo_bin,
+                                            file_name=nome_arq,
+                                            key=f"dl_gestor_{o['id']}",
+                                            use_container_width=True
+                                        )
+                                    except:
+                                        st.error("Erro ao baixar")
 
                         # Botão para reativar
                         if st.button("📤 Reativar", key=f"re_{o['id']}"):
@@ -1063,6 +1065,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

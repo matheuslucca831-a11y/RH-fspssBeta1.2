@@ -941,9 +941,7 @@ else:
                         except Exception as e:
                             st.error(f"Erro no upload: {e}")
                             st.stop()
-                        except Exception as e:
-                            st.error(f"Erro ao subir o arquivo: {e}")
-                            st.stop() # Interrompe se o anexo falhar
+
 
                     if enviar:
                         # Validações básicas
@@ -1035,6 +1033,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

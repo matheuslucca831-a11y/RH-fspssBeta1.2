@@ -923,7 +923,7 @@ else:
                     link_final_anexo = supabase.storage.from_("anexos").get_public_url(caminho_storage)   
 
 
-                            st.stop()
+                    st.stop()
 
 
                     if enviar:
@@ -1038,6 +1038,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

@@ -939,6 +939,7 @@ else:
                                 "detalhes": str(just),
                                 "horarios": str(txt_h),
                                 "arquivado": "Não"
+                                "anexo": "URL_DO_STORAGE", # Aqui entra sua lógica de upload se houver
                             }
 
                 # --- EXECUÇÃO DO SALVAMENTO ---
@@ -1006,6 +1007,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

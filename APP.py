@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import uuid
 import base64
+import requests
 from datetime import datetime, time
 import streamlit as st
 from datetime import datetime, timedelta
@@ -858,15 +859,29 @@ else:
                         # Visualização e Download do Anexo na Aprovação
                         if oc.get('anexo'):
                             with c_inf:
-                                # Coluna de botões para o anexo
                                 col_view, col_down = st.columns(2)
                                 
-                                # 1. Botão para Abrir/Visualizar (Melhor do que o Popover para links externos)
+                                # 1. Botão de Visualizar (Continua abrindo em nova guia)
                                 col_view.link_button("👁️ Visualizar", oc["anexo"], use_container_width=True)
                         
-                                # 2. Botão de Download (Direto via Link)
-                                # Nota: O link_button já permite que o supervisor baixe o arquivo ao abrir
-                                col_down.link_button("📁 Baixar", oc["anexo"], use_container_width=True)
+                                # 2. Botão de Download Real (Força o download)
+                                try:
+                                    # Baixa o conteúdo do arquivo da internet para a memória do Python
+                                    conteudo_arquivo = requests.get(oc["anexo"]).content
+                                    
+                                    # Pega o nome original do arquivo pela URL
+                                    nome_original = oc["anexo"].split("/")[-1] 
+                        
+                                    col_down.download_button(
+                                        label="📁 Baixar Direto",
+                                        data=conteudo_arquivo,
+                                        file_name=nome_original,
+                                        mime="application/octet-stream", # Força o navegador a tratar como download
+                                        key=f"btn_dl_{oc['id']}",
+                                        use_container_width=True
+                                    )
+                                except Exception as e:
+                                    col_down.error("Erro ao preparar download")
 
                         # Lógica de Aprovação/Negação
                         if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
@@ -1038,6 +1053,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

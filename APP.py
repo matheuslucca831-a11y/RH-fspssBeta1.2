@@ -31,11 +31,13 @@ def carregar_vinculos():
         return {}
 def carregar_ocorrencias():
     try:
-        # Busca todas as linhas da tabela 'ocorrencias'
-        res = supabase.table("ocorrencias").select("*").execute()
-        return res.data
+        # .order("id", desc=True) faz com que a última cadastrada apareça primeiro
+        res = supabase.table("ocorrencias").select("*").order("id", desc=True).execute()
+        
+        # Garante que retorne uma lista vazia se não houver dados, evitando erros de loop
+        return res.data if res.data else []
     except Exception as e:
-        st.error(f"Erro ao carregar ocorrências: {e}")
+        st.error(f"Erro ao carregar ocorrências do banco: {e}")
         return []
     
 def subir_para_storage(arquivo_streamlit):
@@ -1004,6 +1006,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

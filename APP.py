@@ -943,25 +943,25 @@ else:
                             }
 
                 # --- EXECUÇÃO DO SALVAMENTO ---
-                                try:
-                                    # 1. Dispara a query e guarda o retorno na variável 'response'
-                                    response = supabase.table("ocorrencias").insert(nova_ocorrencia).execute()
-                                    
-                                    # 2. Verifica se o banco confirmou o salvamento (se há dados no retorno)
-                                    if response.data:
-                                        st.success("✅ Solicitação salva com sucesso!")
-                                        
-                                        # 3. Atualiza a lista de ocorrências na memória para o histórico
-                                        st.session_state.db_ocorrencias = carregar_ocorrencias() 
-                                        
-                                        # 4. Reinicia o app para limpar o formulário e mostrar os dados novos
-                                        st.rerun()
-                                    else:
-                                        st.error("Erro: O banco não confirmou o recebimento dos dados.")
-                
-                                except Exception as e:
-                                    # Captura erros de conexão, colunas erradas ou permissão
-                                    st.error(f"❌ Erro ao salvar no Supabase: {e}")
+                        try:
+                            # 1. Dispara a query e guarda o retorno na variável 'response'
+                            response = supabase.table("ocorrencias").insert(nova_ocorrencia).execute()
+                            
+                            # 2. Verifica se o banco confirmou o salvamento (se há dados no retorno)
+                            if response.data:
+                                st.success("✅ Solicitação salva com sucesso!")
+                                
+                                # 3. Atualiza a lista de ocorrências na memória para o histórico
+                                st.session_state.db_ocorrencias = carregar_ocorrencias() 
+                                
+                                # 4. Reinicia o app para limpar o formulário e mostrar os dados novos
+                                st.rerun()
+                            else:
+                                st.error("Erro: O banco não confirmou o recebimento dos dados.")
+        
+                        except Exception as e:
+                            # Captura erros de conexão, colunas erradas ou permissão
+                            st.error(f"❌ Erro ao salvar no Supabase: {e}")
 
 
     # ---------------- HISTÓRICO ----------------
@@ -1007,6 +1007,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

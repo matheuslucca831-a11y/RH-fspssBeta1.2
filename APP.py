@@ -932,13 +932,12 @@ else:
                             # ATENÇÃO: Verifique se no Supabase é 'email_solicita' ou 'email_solicitante'
                             nova_ocorrencia = {
                                 "solicitante": st.session_state.usuario_logado.get('nome'),
-                                "email_solicita": st.session_state.usuario_logado.get('email'), # Nome exato da coluna da Imagem 1
+                                "email_solicitante": st.session_state.usuario_logado.get('email'), # Nome exato da coluna da Imagem 1
                                 "data": str(txt_data),
                                 "motivo": str(mot),
                                 "status": "⏳ Pendente",
                                 "detalhes": str(just),
                                 "horarios": str(txt_h),
-                                "anexo": "URL_DO_STORAGE", # Aqui entra sua lógica de upload se houver
                                 "arquivado": "Não"
                             }
 
@@ -1007,6 +1006,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

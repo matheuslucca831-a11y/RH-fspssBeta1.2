@@ -939,7 +939,7 @@ else:
                                 "detalhes": str(just),
                                 "horarios": str(txt_h),
                                 "arquivado": "Não",
-                                "anexo": "URL_DO_STORAGE" # Aqui entra sua lógica de upload se houver
+                                "anexo": str(link_final_anexo) # <--- AGORA SALVA O LINK REAL
                             }
 
                 # --- EXECUÇÃO DO SALVAMENTO ---
@@ -1007,6 +1007,32 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
+
+# --- LÓGICA DE UPLOAD DE ANEXO ---
+link_final_anexo = "" # Começa vazio
+
+if anexo_f:
+    try:
+        # 1. Gera um nome único (Ex: 20260305_1530_comprovante.pdf)
+        nome_arquivo = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{anexo_f.name}"
+        caminho_storage = f"atestados/{nome_arquivo}"
+        
+        # 2. Faz o upload para o bucket chamado 'anexos'
+        # Certifique-se de que o bucket 'anexos' existe no seu painel do Supabase
+        supabase.storage.from_("anexos").upload(
+            path=caminho_storage, 
+            file=anexo_f.getvalue(),
+            file_options={"content-type": anexo_f.type}
+        )
+        
+        # 3. Pega a URL pública para salvar na tabela
+        link_final_anexo = supabase.storage.from_("anexos").get_public_url(caminho_storage)
+        
+    except Exception as e:
+        st.error(f"Erro ao subir o arquivo: {e}")
+        st.stop() # Interrompe se o anexo falhar
+
 
 
 

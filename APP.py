@@ -877,36 +877,31 @@ if user['cargo'] == "Gestor Máximo":
 # 6. VISÃO OPERACIONAL (ENFERMEIRO, SUPERVISOR, FUNCIONÁRIO)
 # --------------------------------------------------
 else:
-    # --- LÓGICA DE FILTRAGEM DE PENDÊNCIAS ---
+# --- LÓGICA DE FILTRAGEM DE PENDÊNCIAS (Atualizada) ---
     email_logado = st.session_state.usuario_logado.get('email')
     meus_lids = st.session_state.vinculos.get(email_logado, [])
-    
+    user = st.session_state.usuario_logado # Atalho para o user
+
     if user['cargo'] in ["Enfermeiro", "Supervisor"]:
-        # Enfermeiro vê o que é "Pendente" dos seus liderados
-        pendentes = [
-            o for o in st.session_state.db_ocorrencias 
-            if o["status"] == "⏳ Pendente" and o["email_solicitante"] in meus_lids
-        ]
+        pendentes = [o for o in st.session_state.db_ocorrencias if o["status"] == "⏳ Pendente" and o["email_solicitante"] in meus_lids]
         
-        tab_aprov, tab_nova, tab_hist = st.tabs([
-            f"📋 Aprovações ({len(pendentes)})", "📝 Nova ocorrência", "📜 Histórico"
+        # Adicionada a aba "Minhas Decisões"
+        tab_aprov, tab_nova, tab_hist, tab_decididos = st.tabs([
+            f"📋 Aprovações ({len(pendentes)})", "📝 Nova ocorrência", "📜 Meu Histórico", "✅ Minhas Decisões"
         ])
         
     elif user['cargo'] == "Gestor Máximo":
-        # Diretor vê especificamente o que aguarda a direção
-        # Removi o recuo excessivo que estava aqui
-        pendentes = [
-            o for o in st.session_state.db_ocorrencias 
-            if o["status"] == "⏳ Aguardando Direção"
-        ]
-        tab_aprov, tab_nova, tab_hist = st.tabs([
-            f"🏛️ Decisão Final ({len(pendentes)})", "📝 Nova ocorrência", "📜 Histórico"
+        pendentes = [o for o in st.session_state.db_ocorrencias if o["status"] == "⏳ Aguardando Direção"]
+        
+        # Adicionada a aba "Minhas Decisões"
+        tab_aprov, tab_nova, tab_hist, tab_decididos = st.tabs([
+            f"🏛️ Decisão Final ({len(pendentes)})", "📝 Nova ocorrência", "📜 Meu Histórico", "✅ Minhas Decisões"
         ])
         
     else:
-        # Funcionário comum
-        tab_nova, tab_hist = st.tabs(["📝 Nova ocorrência", "📜 Histórico"])
+        tab_nova, tab_hist = st.tabs(["📝 Nova ocorrência", "📜 Meu Histórico"])
         tab_aprov = None
+        tab_decididos = None # Funcionário não vê esta aba
 
     # ---------------- TAB APROVAÇÕES (Lógica Dupla) ----------------
     if tab_aprov:
@@ -1165,6 +1160,38 @@ with tab_nova:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
+
+    if tab_decididos:
+            with tab_decididos:
+                st.subheader("✅ Ocorrências Analisadas por Mim")
+                
+                # Filtra tudo que FOI ANALISADO pelo nome do usuário logado
+                meus_decididos = [
+                    o for o in st.session_state.db_ocorrencias 
+                    if o.get("aprovado_por") and user['nome'] in str(o.get("aprovado_por"))
+                ]
+    
+                if not meus_decididos:
+                    st.info("Você ainda não realizou nenhuma aprovação ou negativa.")
+                else:
+                    for o in meus_decididos:
+                        with st.container(border=True):
+                            st.markdown(f"**👤 Funcionário:** {o['solicitante']}")
+                            st.markdown(f"📅 {o['data']} | Motivo: {o['motivo']}")
+                            
+                            # Mostra o status com a cor correta
+                            status_atual = o.get('status', '')
+                            if "Aprovado" in status_atual:
+                                st.success(f"Status: {status_atual}")
+                            elif "Negado" in status_atual:
+                                st.error(f"Status: {status_atual}")
+                            else:
+                                st.warning(f"Status: {status_atual}")
+    
+                            if o.get("anexo"):
+                                st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

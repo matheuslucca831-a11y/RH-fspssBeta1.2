@@ -309,33 +309,34 @@ if not st.session_state.autenticado:
             e_in = st.text_input("Matrícula")
             s_in = st.text_input("(Senha)", type="password")
             if st.button("Entrar", use_container_width=True):
-                            # Garante que temos a lista mais recente antes de procurar
-                            st.session_state.db_usuarios = carregar_usuarios() 
-                            
-                            # Busca higienizada (sem espaços e tudo em string)
-                            matricula_digitada = str(e_in).strip()
-                            
-                            u_f = next(
-                                (u for u in st.session_state.db_usuarios 
-                                if str(u.get('email', '')).strip() == matricula_digitada),
-                                None
-                            )
             
-                            if u_f and verificar_senha(s_in, u_f['matricula']):
-                                st.session_state.autenticado = True
-                                st.session_state.usuario_logado = u_f
-                                
-                                # --- MUDANÇA AQUI: Carrega os dados do Supabase para a memória ---
-                                with st.spinner("Carregando dados..."):
-                                    st.session_state.db_ocorrencias = carregar_ocorrencias()
-                                
-                                # Salva sessão temporária no arquivo/cookie
-                                salvar_login(u_f["email"])
-                                
-                                st.success("Login realizado!")
-                                st.rerun()
-                            else:
-                                st.error("Matrícula ou senha incorretos.")
+                try:
+            
+                    email_login = f"{e_in}@rh.fspss"
+            
+                    # buscar usuário
+                    busca = supabase.table("usuarios").select("*").eq("email", email_login).execute()
+            
+                    if not busca.data:
+                        st.error("❌ Matrícula não encontrada.")
+                        st.stop()
+            
+                    usuario = busca.data[0]
+            
+                    # autenticar no supabase
+                    resposta = supabase.auth.sign_in_with_password({
+                        "email": email_login,
+                        "password": s_in
+                    })
+            
+                    st.session_state.autenticado = True
+                    st.session_state.usuario_logado = usuario
+            
+                    st.success("Login realizado com sucesso!")
+                    st.rerun()
+            
+                except Exception as e:
+                    st.error("❌ Matrícula ou senha incorreta.")
 
 # Trava de segurança: Se não autenticou, para o script aqui e não executa o resto
 if not st.session_state.get("autenticado", False) or st.session_state.usuario_logado is None:
@@ -385,14 +386,23 @@ if user['cargo'] == "Gestor Máximo":
                 n_e = c1.text_input("Matrícula")
                 n_c = c2.selectbox("Cargo", ["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"])
                 if st.form_submit_button("Salvar"):
+                                    email_interno = f"{n_e}@rh.fspss"
+
                                     novo_usuario = {
-                                        "email": str(n_e).strip(), # Matrícula (Login)
+                                        "email": email_interno,  # email técnico
                                         "nome": n_n,
                                         "cargo": n_c,
                                         "matricula": gerar_hash(str(n_m)) # Senha (Hash)
                                     }
                                 
                                     try:
+                                        # cria usuário no sistema de autenticação
+                                        supabase.auth.sign_up({
+                                            "email": email_interno,
+                                            "password": n_m
+                                        })
+                                        # salva na tabela usuarios
+
                                         supabase.table("usuarios").insert(novo_usuario).execute()
                                         # --- LINHA CRÍTICA: Atualiza a lista na memória do app ---
                                         st.session_state.db_usuarios = carregar_usuarios() 
@@ -420,7 +430,7 @@ if user['cargo'] == "Gestor Máximo":
 
                 nova_matricula_login = col2.text_input(
                     "Matrícula (Login)",
-                    value=u["email"],
+                    value=u["email"].split("@")[0],
                     key=f"e_{u['email']}",
                     disabled=not pode_editar
                 )
@@ -1114,6 +1124,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

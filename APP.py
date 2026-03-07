@@ -302,9 +302,11 @@ if not st.session_state.autenticado:
                 try:
             
                     email_login = f"{e_in}@rh.fspss"
-            
-                    # buscar usuário
+                  # buscar usuário
                     busca = supabase.table("usuarios").select("*").eq("email", email_login).execute()
+
+                    st.write("Email gerado:", email_login)
+                    st.write("Resultado banco:", busca.data)
             
                     if not busca.data:
                         st.error("❌ Matrícula não encontrada.")
@@ -1113,6 +1115,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

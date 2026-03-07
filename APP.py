@@ -947,113 +947,113 @@ with t_arq:
 
 
 
-    if user['cargo'] in ["Enfermeiro", "Supervisor"]:
-
-
-
-        with tab_aprov:
-
-            st.header("📋 Gestão de Equipe")
-
-            meus_lids = st.session_state.vinculos.get(email_logado, [])
-
-            pends = [o for o in st.session_state.db_ocorrencias if o['status'] == "⏳ Pendente" and o['email_solicitante'] in meus_lids]
-
-
-
-            if pends:
-
-                for oc in pends:
-
-                    with st.container(border=True):
-
-                        c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
-
-
-
-                        texto = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
-
-                        if oc.get('horarios'):
-
-                            texto += f"\n🕒 {oc['horarios']}"
-
-                        
-
-                        c_inf.write(texto)
-
-
-
-                        if oc.get("detalhes"):
-
-                            with c_inf.expander("Ver justificativa"):
-
-                                st.write(oc["detalhes"])
-
-
-
-                        # Visualização e Download do Anexo na Aprovação
-
-                        if oc.get('anexo'):
-
-                            with c_inf:
-
-                                col_view, col_down = st.columns(2)
-
-                                
-
-                                # 1. Botão de Visualizar (Continua abrindo em nova guia)
-
-                                col_view.link_button("👁️ Visualizar", oc["anexo"], use_container_width=True)
-
-                        
-
-                                # 2. Botão de Download Real (Força o download)
-
-                                try:
-
-                                    # Baixa o conteúdo do arquivo da internet para a memória do Python
-
-                                    conteudo_arquivo = requests.get(oc["anexo"]).content
-
+        if user['cargo'] in ["Enfermeiro", "Supervisor"]:
+    
+    
+    
+            with tab_aprov:
+    
+                st.header("📋 Gestão de Equipe")
+    
+                meus_lids = st.session_state.vinculos.get(email_logado, [])
+    
+                pends = [o for o in st.session_state.db_ocorrencias if o['status'] == "⏳ Pendente" and o['email_solicitante'] in meus_lids]
+    
+    
+    
+                if pends:
+    
+                    for oc in pends:
+    
+                        with st.container(border=True):
+    
+                            c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
+    
+    
+    
+                            texto = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
+    
+                            if oc.get('horarios'):
+    
+                                texto += f"\n🕒 {oc['horarios']}"
+    
+                            
+    
+                            c_inf.write(texto)
+    
+    
+    
+                            if oc.get("detalhes"):
+    
+                                with c_inf.expander("Ver justificativa"):
+    
+                                    st.write(oc["detalhes"])
+    
+    
+    
+                            # Visualização e Download do Anexo na Aprovação
+    
+                            if oc.get('anexo'):
+    
+                                with c_inf:
+    
+                                    col_view, col_down = st.columns(2)
+    
                                     
-
-                                    # Pega o nome original do arquivo pela URL
-
-                                    nome_original = oc["anexo"].split("/")[-1] 
-
-                        
-
-                                    col_down.download_button(
-
-                                        label="📁 Baixar Direto",
-
-                                        data=conteudo_arquivo,
-
-                                        file_name=nome_original,
-
-                                        mime="application/octet-stream", # Força o navegador a tratar como download
-
-                                        key=f"btn_dl_{oc['id']}",
-
-                                        use_container_width=True
-
-                                    )
-
-                                except Exception as e:
-
-                                    col_down.error("Erro ao preparar download")
-
-
-
-                        # Lógica de Aprovação/Negação
-
-                        if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
-
-                            try:
-
-                                # Atualiza no Supabase
-
-                                supabase.table("ocorrencias").update({"status": "✅ Aprovado", "aprovado_por": user['nome']}).eq("id", oc['id']).execute()
+    
+                                    # 1. Botão de Visualizar (Continua abrindo em nova guia)
+    
+                                    col_view.link_button("👁️ Visualizar", oc["anexo"], use_container_width=True)
+    
+                            
+    
+                                    # 2. Botão de Download Real (Força o download)
+    
+                                    try:
+    
+                                        # Baixa o conteúdo do arquivo da internet para a memória do Python
+    
+                                        conteudo_arquivo = requests.get(oc["anexo"]).content
+    
+                                        
+    
+                                        # Pega o nome original do arquivo pela URL
+    
+                                        nome_original = oc["anexo"].split("/")[-1] 
+    
+                            
+    
+                                        col_down.download_button(
+    
+                                            label="📁 Baixar Direto",
+    
+                                            data=conteudo_arquivo,
+    
+                                            file_name=nome_original,
+    
+                                            mime="application/octet-stream", # Força o navegador a tratar como download
+    
+                                            key=f"btn_dl_{oc['id']}",
+    
+                                            use_container_width=True
+    
+                                        )
+    
+                                    except Exception as e:
+    
+                                        col_down.error("Erro ao preparar download")
+    
+    
+    
+                            # Lógica de Aprovação/Negação
+    
+                            if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
+    
+                                try:
+    
+                                    # Atualiza no Supabase
+    
+                                    supabase.table("ocorrencias").update({"status": "✅ Aprovado", "aprovado_por": user['nome']}).eq("id", oc['id']).execute()
 # ---------------- APROVAÇÕES ----------------
 if user['cargo'] in ["Enfermeiro", "Supervisor"]:
 
@@ -1302,6 +1302,7 @@ if user['cargo'] in ["Enfermeiro", "Supervisor"]:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

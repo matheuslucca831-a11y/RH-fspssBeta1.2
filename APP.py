@@ -481,128 +481,70 @@ if user['cargo'] == "Gestor Máximo":
                         st.error("Erro ao excluir usuário")
 
     with t_vinc:
-            st.subheader("🔗 Gerenciar Estrutura de Equipes")
-            
-            # Lista de quem pode ser líder
-            lids = [u for u in st.session_state.db_usuarios if u['cargo'] in ['Enfermeiro', 'Supervisor']]
-            
-            if not lids:
-                st.warning("Nenhum Enfermeiro ou Supervisor cadastrado para ser líder.")
-            else:
-                # --- PARTE 1: FORMULÁRIO RÁPIDO ---
-                with st.expander("➕ Vincular novo Liderado a um Líder", expanded=False):
-                    with st.form("form_vinc"):
-                        c1, c2 = st.columns(2)
-                        l_sel = c1.selectbox("Selecione o Líder:", lids, format_func=lambda x: f"{x['nome']} ({x['cargo']})")
-                        
-                        disp = [u['email'] for u in st.session_state.db_usuarios if u['email'] != l_sel['email']]
-                        ld_sel = c2.multiselect("Selecione os Liderados:", disp, 
-                                                format_func=lambda x: next(u['nome'] for u in st.session_state.db_usuarios if u['email'] == x))
-                        
-                        if st.form_submit_button("Confirmar Vínculo"):
-                            try:
-                                # 1. Remove vínculos antigos do líder para não duplicar
-                                supabase.table("vinculos").delete().eq("lider", l_sel['email']).execute()
-                                
-                                # 2. Prepara e insere os novos registros
-                                novos_regs = [{"lider": l_sel['email'], "liderado": ld} for ld in ld_sel]
-                                if novos_regs:
-                                    supabase.table("vinculos").insert(novos_regs).execute()
-                                
-                                # 3. Atualiza a memória e recarrega
-                                st.session_state.vinculos = carregar_vinculos()
-                                st.success("Equipe atualizada no Supabase!")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Erro ao salvar no banco: {e}")
-
-
-
-
-                
-                st.write("---")
-                
-                # --- PARTE 2: FILTRO POR NOME ---
-                
-                
-                st.markdown("### 📋 Configuração Atual")
-                
-                # Campo de busca simplificado
-                f_nome = st.text_input("🔍 Filtrar líder por nome", placeholder="Digite e o sistema filtrará...", key="filtro_nome")
-                # Aplica o filtro na lista de líderes antes de rodar o loop
-                if f_nome:
-                    lids_filtrados = [l for l in lids if f_nome.lower() in l['nome'].lower()]
-                else:
-                    lids_filtrados = lids
-
-                if not lids_filtrados:
-                    st.info("Nenhum líder encontrado com esse nome.")
-                else:
-                    # --- PARTE 3: LOOP DE EXIBIÇÃO ---
-                    for lider in lids_filtrados:
-                        l_email = lider['email']
-                        l_nome = lider['nome']
-                        l_cargo = lider['cargo']
-                        
-                        liderados_atuais = st.session_state.vinculos.get(l_email, [])
-                        qtd = len(liderados_atuais)
-                        
-                        with st.container(border=True):
-                            col_info, col_btn = st.columns([0.8, 0.2])
-                            
-                            with col_info:
-                                st.markdown(f"**{l_nome}** ({l_cargo})")
-                                if qtd > 0:
-                                    nomes_liderados = []
-                                    for e in liderados_atuais:
-                                        nome = next((u['nome'] for u in st.session_state.db_usuarios if u['email'] == e), e)
-                                        nomes_liderados.append(f"`{nome}`")
-                                    st.markdown(f"👥 {', '.join(nomes_liderados)}")
-                                else:
-                                    st.caption("⚠️ Ninguém vinculado a este líder.")
-
-                            if col_btn.button("✏️ Editar", key=f"ed_vinc_{l_email}"):
-                                st.session_state[f"editando_{l_email}"] = True
-
-                            if st.session_state.get(f"editando_{l_email}"):
-                                st.write(f"**Editando equipe de {l_nome}:**")
-                                novo_time = st.multiselect(
-                                    "Selecione os liderados:", 
-                                    [u['email'] for u in st.session_state.db_usuarios if u['email'] != l_email],
-                                    default=liderados_atuais,
-                                    format_func=lambda x: next((u['nome'] for u in st.session_state.db_usuarios if u['email'] == x), x),
-                                    key=f"ms_{l_email}"
-                                )
-                            
-                                ce1, ce2 = st.columns(2)
-                                if ce1.button("✅ Salvar", key=f"sv_{l_email}", use_container_width=True):
-                                    try:
-                                        # 1. Limpa os vínculos antigos desse líder no Supabase
-                                        supabase.table("vinculos").delete().eq("lider", l_email).execute()
-                                        
-                                        # 2. Insere os novos se houver algum selecionado
-                                        if novo_time:
-                                            novos_vincs = [{"lider": l_email, "liderado": ld} for ld in novo_time]
-                                            supabase.table("vinculos").insert(novos_vincs).execute()
-                                        
-                                        # 3. Atualiza a memória local (Sincroniza com o Banco)
-                                        st.session_state.vinculos = carregar_vinculos()
-                                        
-                                        # 4. Fecha o modo de edição e reinicia
-                                        if f"editando_{l_email}" in st.session_state:
-                                            del st.session_state[f"editando_{l_email}"]
-                                        
-                                        st.success("Vínculos atualizados com sucesso!")
-                                        st.rerun()
-                                        
-                                    except Exception as e:
-                                        st.error(f"Erro ao salvar no Supabase: {e}")
+        st.subheader("🏢 Gestão de Unidades e Equipes")
+        
+        # --- PARTE 1: CRIAR NOVA UNIDADE ---
+        with st.expander("➕ Criar Nova Unidade/Setor", expanded=False):
+            with st.form("form_unidade"):
+                nova_unidade = st.text_input("Nome da Unidade (ex: USF Boiçucanga, Administrativo):")
+                if st.form_submit_button("Cadastrar Unidade"):
+                    if nova_unidade:
+                        try:
+                            supabase.table("unidades").insert({"nome": nova_unidade}).execute()
+                            st.success("Unidade criada!")
+                            st.rerun()
+                        except: st.error("Erro ao criar.")
     
-                                if ce2.button("❌ Cancelar", key=f"cn_{l_email}", use_container_width=True):
-                                    if f"editando_{l_email}" in st.session_state:
-                                        del st.session_state[f"editando_{l_email}"]
-                                    st.rerun()
-
+        # Carrega unidades do banco
+        res_unidades = supabase.table("unidades").select("*").execute()
+        unidades_db = res_unidades.data if res_unidades.data else []
+    
+        if not unidades_db:
+            st.warning("Nenhuma unidade cadastrada.")
+        else:
+            # --- PARTE 2: VINCULAR FUNCIONÁRIO A UNIDADE ---
+            st.write("---")
+            st.markdown("### 🔗 Vincular Funcionários")
+            
+            with st.container(border=True):
+                c1, c2 = st.columns(2)
+                u_unidade = c1.selectbox("Selecione a Unidade:", [uni['nome'] for uni in unidades_db])
+                
+                # Lista funcionários que ainda não estão nessa unidade ou todos para troca
+                todos_users = [u['email'] for u in st.session_state.db_usuarios]
+                u_func = c2.multiselect("Selecionar Funcionários:", todos_users, 
+                                       format_func=lambda x: next(u['nome'] for u in st.session_state.db_usuarios if u['email'] == x))
+                
+                if st.button("Confirmar Alocação na Unidade", use_container_width=True):
+                    try:
+                        for email in u_func:
+                            supabase.table("usuarios").update({"unidade": u_unidade}).eq("email", email).execute()
+                        st.success(f"Equipe vinculada à unidade {u_unidade}!")
+                        # Atualize seus usuários na memória aqui se necessário
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro: {e}")
+    
+            # --- PARTE 3: VISUALIZAÇÃO POR UNIDADE ---
+            st.write("---")
+            for uni in unidades_db:
+                with st.container(border=True):
+                    # Filtra usuários desta unidade
+                    membros = [u for u in st.session_state.db_usuarios if u.get('unidade') == uni['nome']]
+                    
+                    col_u, col_exc = st.columns([0.8, 0.2])
+                    col_u.markdown(f"### 📍 {uni['nome']}")
+                    
+                    if col_exc.button("🗑️", key=f"del_uni_{uni['id']}", help="Excluir Unidade"):
+                        supabase.table("unidades").delete().eq("id", uni['id']).execute()
+                        st.rerun()
+    
+                    if membros:
+                        for m in membros:
+                            cargo_emoji = "🩺" if m['cargo'] == "Enfermeiro" else "👤"
+                            st.write(f"{cargo_emoji} **{m['nome']}** ({m['cargo']})")
+                    else:
+                        st.caption("Nenhum funcionário nesta unidade.")
 
     with t_aprovar:
     
@@ -877,23 +819,32 @@ if user['cargo'] == "Gestor Máximo":
 # 6. VISÃO OPERACIONAL (ENFERMEIRO, SUPERVISOR, FUNCIONÁRIO)
 # --------------------------------------------------
 else:
-# --- LÓGICA DE FILTRAGEM DE PENDÊNCIAS (Atualizada) ---
+    # --- LÓGICA DE FILTRAGEM DE PENDÊNCIAS POR UNIDADE ---
     email_logado = st.session_state.usuario_logado.get('email')
-    meus_lids = st.session_state.vinculos.get(email_logado, [])
-    user = st.session_state.usuario_logado # Atalho para o user
+    user = st.session_state.usuario_logado 
+    minha_unidade = user.get('unidade') # Pega a unidade salva no cadastro do líder
 
     if user['cargo'] in ["Enfermeiro", "Supervisor"]:
-        pendentes = [o for o in st.session_state.db_ocorrencias if o["status"] == "⏳ Pendente" and o["email_solicitante"] in meus_lids]
+        # 1. Descobrimos quem são os funcionários que pertencem à mesma unidade que o líder
+        equipe_unidade = [
+            u['email'] for u in st.session_state.db_usuarios 
+            if u.get('unidade') == minha_unidade
+        ]
         
-        # Adicionada a aba "Minhas Decisões"
+        # 2. Filtramos as ocorrências: Devem ser "Pendentes" E o solicitante deve ser da unidade
+        pendentes = [
+            o for o in st.session_state.db_ocorrencias 
+            if o["status"] == "⏳ Pendente" and o["email_solicitante"] in equipe_unidade
+        ]
+        
         tab_aprov, tab_nova, tab_hist, tab_decididos = st.tabs([
             f"📋 Aprovações ({len(pendentes)})", "📝 Nova ocorrência", "📜 Meu Histórico", "✅ Minhas Decisões"
         ])
         
     elif user['cargo'] == "Gestor Máximo":
+        # O Gestor Máximo continua vendo TUDO que está com a direção, independente da unidade
         pendentes = [o for o in st.session_state.db_ocorrencias if o["status"] == "⏳ Aguardando Direção"]
         
-        # Adicionada a aba "Minhas Decisões"
         tab_aprov, tab_nova, tab_hist, tab_decididos = st.tabs([
             f"🏛️ Decisão Final ({len(pendentes)})", "📝 Nova ocorrência", "📜 Meu Histórico", "✅ Minhas Decisões"
         ])
@@ -901,7 +852,7 @@ else:
     else:
         tab_nova, tab_hist = st.tabs(["📝 Nova ocorrência", "📜 Meu Histórico"])
         tab_aprov = None
-        tab_decididos = None # Funcionário não vê esta aba
+        tab_decididos = None
 
     # ---------------- TAB APROVAÇÕES (Lógica Dupla) ----------------
     if tab_aprov:
@@ -915,10 +866,17 @@ else:
                     with st.container(border=True):
                         c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
                         
-                        # --- NOVO BLOCO DE INFOS + JUSTIFICATIVA + ANEXO ---
-                        texto_base = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
+                        # --- ONDE VOCÊ MUDA (LOGICA DE BUSCA DA UNIDADE) ---
+                        unidade_func = next((u.get('unidade', 'Sem Unidade') 
+                                            for u in st.session_state.db_usuarios 
+                                            if u['email'] == oc['email_solicitante']), 'N/A')
+    
+                        # Substitua a sua linha antiga do texto_base por essa:
+                        texto_base = f"**{oc['solicitante']}** ({unidade_func})\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
+                        
                         if oc.get('horarios'): 
                             texto_base += f"\n🕒 {oc['horarios']}"
+                        
                         c_inf.write(texto_base)
                         
                         # Criamos um único expander para não poluir a tela
@@ -1191,6 +1149,7 @@ with tab_nova:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

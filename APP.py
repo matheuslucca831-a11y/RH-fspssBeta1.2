@@ -918,115 +918,115 @@ else:
 
 # ---------------- APROVAÇÕES ----------------
 
-if user['cargo'] in ["Enfermeiro", "Supervisor"]:
-
-    with tab_aprov:
-
-        st.header("📋 Gestão de Equipe")
-
-        meus_lids = st.session_state.vinculos.get(email_logado, [])
-
-        pends = [
-            o for o in st.session_state.db_ocorrencias
-            if o['status'] == "⏳ Pendente"
-            and o['email_solicitante'] in meus_lids
-        ]
-
-        if not pends:
-
-            st.info("Nenhuma ocorrência pendente para aprovação.")
-
-        else:
-
-            for oc in pends:
-
-                with st.container(border=True):
-
-                    c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
-
-                    texto = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
-
-                    if oc.get('horarios'):
-                        texto += f"\n🕒 {oc['horarios']}"
-
-                    c_inf.write(texto)
-
-                    if oc.get("detalhes"):
-                        with c_inf.expander("Ver justificativa"):
-                            st.write(oc["detalhes"])
-
-                    # -------- ANEXO --------
-
-                    if oc.get('anexo'):
-
-                        with c_inf:
-
-                            col_view, col_down = st.columns(2)
-
-                            col_view.link_button(
-                                "👁️ Visualizar",
-                                oc["anexo"],
-                                use_container_width=True
-                            )
-
-                            try:
-
-                                conteudo_arquivo = requests.get(oc["anexo"]).content
-                                nome_original = oc["anexo"].split("/")[-1]
-
-                                col_down.download_button(
-                                    label="📁 Baixar Direto",
-                                    data=conteudo_arquivo,
-                                    file_name=nome_original,
-                                    mime="application/octet-stream",
-                                    key=f"btn_dl_{oc['id']}",
+    if user['cargo'] in ["Enfermeiro", "Supervisor"]:
+    
+        with tab_aprov:
+    
+            st.header("📋 Gestão de Equipe")
+    
+            meus_lids = st.session_state.vinculos.get(email_logado, [])
+    
+            pends = [
+                o for o in st.session_state.db_ocorrencias
+                if o['status'] == "⏳ Pendente"
+                and o['email_solicitante'] in meus_lids
+            ]
+    
+            if not pends:
+    
+                st.info("Nenhuma ocorrência pendente para aprovação.")
+    
+            else:
+    
+                for oc in pends:
+    
+                    with st.container(border=True):
+    
+                        c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
+    
+                        texto = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
+    
+                        if oc.get('horarios'):
+                            texto += f"\n🕒 {oc['horarios']}"
+    
+                        c_inf.write(texto)
+    
+                        if oc.get("detalhes"):
+                            with c_inf.expander("Ver justificativa"):
+                                st.write(oc["detalhes"])
+    
+                        # -------- ANEXO --------
+    
+                        if oc.get('anexo'):
+    
+                            with c_inf:
+    
+                                col_view, col_down = st.columns(2)
+    
+                                col_view.link_button(
+                                    "👁️ Visualizar",
+                                    oc["anexo"],
                                     use_container_width=True
                                 )
-
-                            except:
-                                col_down.error("Erro ao preparar download")
-
-                    # -------- APROVAR --------
-
-                    if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
-
-                        try:
-
-                            supabase.table("ocorrencias").update({
-                                "status": "✅ Aprovado",
-                                "aprovado_por": user['nome']
-                            }).eq("id", oc['id']).execute()
-
-                            st.session_state.db_ocorrencias = carregar_ocorrencias()
-
-                            st.success("Ocorrência aprovada!")
-
-                            st.rerun()
-
-                        except Exception as e:
-
-                            st.error(f"Erro ao aprovar: {e}")
-
-                    # -------- NEGAR --------
-
-                    if c_no.button("❌ Negar", key=f"apr_no_{oc['id']}", use_container_width=True):
-
-                        try:
-
-                            supabase.table("ocorrencias").update({
-                                "status": "❌ Negado",
-                                "aprovado_por": user['nome']
-                            }).eq("id", oc['id']).execute()
-
-                            st.session_state.db_ocorrencias = carregar_ocorrencias()
-
-                            st.warning("Ocorrência negada.")
-
-                            st.rerun()
-
-                        except Exception as e:
-
-                            st.error(f"Erro ao negar: {e}")
+    
+                                try:
+    
+                                    conteudo_arquivo = requests.get(oc["anexo"]).content
+                                    nome_original = oc["anexo"].split("/")[-1]
+    
+                                    col_down.download_button(
+                                        label="📁 Baixar Direto",
+                                        data=conteudo_arquivo,
+                                        file_name=nome_original,
+                                        mime="application/octet-stream",
+                                        key=f"btn_dl_{oc['id']}",
+                                        use_container_width=True
+                                    )
+    
+                                except:
+                                    col_down.error("Erro ao preparar download")
+    
+                        # -------- APROVAR --------
+    
+                        if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
+    
+                            try:
+    
+                                supabase.table("ocorrencias").update({
+                                    "status": "✅ Aprovado",
+                                    "aprovado_por": user['nome']
+                                }).eq("id", oc['id']).execute()
+    
+                                st.session_state.db_ocorrencias = carregar_ocorrencias()
+    
+                                st.success("Ocorrência aprovada!")
+    
+                                st.rerun()
+    
+                            except Exception as e:
+    
+                                st.error(f"Erro ao aprovar: {e}")
+    
+                        # -------- NEGAR --------
+    
+                        if c_no.button("❌ Negar", key=f"apr_no_{oc['id']}", use_container_width=True):
+    
+                            try:
+    
+                                supabase.table("ocorrencias").update({
+                                    "status": "❌ Negado",
+                                    "aprovado_por": user['nome']
+                                }).eq("id", oc['id']).execute()
+    
+                                st.session_state.db_ocorrencias = carregar_ocorrencias()
+    
+                                st.warning("Ocorrência negada.")
+    
+                                st.rerun()
+    
+                            except Exception as e:
+    
+                                st.error(f"Erro ao negar: {e}")
 
     # ---------------- NOVA OCORRÊNCIA ----------------
 
@@ -1198,6 +1198,7 @@ if user['cargo'] in ["Enfermeiro", "Supervisor"]:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

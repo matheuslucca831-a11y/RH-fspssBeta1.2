@@ -438,23 +438,30 @@ if user['cargo'] == "Gestor Máximo":
                 c1, c2 = st.columns(2)
 
                 if c1.button("💾 Atualizar", key=f"up_{u['email']}") and pode_editar:
-                    u["nome"] = novo_nome
-                    u["email"] = nova_matricula_login
-                    u["cargo"] = novo_cargo
-
+                
+                    email_antigo = u["email"]
+                
                     if nova_senha:
-                        u["matricula"] = gerar_hash(nova_senha)
-
+                        senha_hash = gerar_hash(nova_senha)
+                    else:
+                        senha_hash = u["matricula"]
+                
                     try:
                         supabase.table("usuarios").update({
                             "nome": novo_nome,
                             "email": nova_matricula_login,
                             "cargo": novo_cargo,
-                            "matricula": u["matricula"]
-                        }).eq("email", u["email"]).execute()
-                    
+                            "matricula": senha_hash
+                        }).eq("email", email_antigo).execute()
+                
+                        st.session_state.db_usuarios = carregar_usuarios()
+                
                         st.success("Usuário atualizado!")
                         st.rerun()
+                
+                    except Exception as e:
+                        st.error("Erro ao atualizar usuário")
+                        st.write(e)
                     
                     except Exception as e:
                         st.error("Erro ao atualizar usuário")
@@ -669,11 +676,6 @@ with t_hist:
             df_filtrado = df_oc[mask]
 
 
-
-            df_filtrado = df_oc[mask]
-
-
-
                 # 4. EXIBIÇÃO DOS CARDS FILTRADOS (Substitua daqui para baixo)
 
             if df_filtrado.empty:
@@ -884,252 +886,146 @@ with t_arq:
 # 6. VISÃO OPERACIONAL (ENFERMEIRO, SUPERVISOR, FUNCIONÁRIO)
 # --------------------------------------------------
 
+else:
 
-        else:
-        
-        
-        
-            if user['cargo'] in ["Enfermeiro", "Supervisor"]:
-        
-                meus_lids = st.session_state.vinculos.get(email_logado, [])
-        
-        
-        
-                pendentes = [
-        
-                    o for o in st.session_state.db_ocorrencias
-        
-                    if o["status"] == "⏳ Pendente"
-        
-                    and o["email_solicitante"] in meus_lids
-        
-                ]
-        
-        
-        
-                qtd_pend = len(pendentes)
-        
-        
-        
-                tab_aprov, tab_nova, tab_hist = st.tabs(
-        
-                    
-        
-                   [ f"📋 Aprovações ({qtd_pend})",
-        
-                    "📝 Nova ocorrência",
-        
-                    "📜 Histórico"
-        
-                    ]
-        
-                )
-        
-        
-        
-            else:
-        
-        
-        
-                tab_nova, tab_hist = st.tabs(
-        
-                    ["📝 Nova ocorrência", "📜 Histórico"]
-        
-                )
-        
-        
-        
-                tab_aprov = None
+    if user['cargo'] in ["Enfermeiro", "Supervisor"]:
+
+        meus_lids = st.session_state.vinculos.get(email_logado, [])
+
+        pendentes = [
+            o for o in st.session_state.db_ocorrencias
+            if o["status"] == "⏳ Pendente"
+            and o["email_solicitante"] in meus_lids
+        ]
+
+        qtd_pend = len(pendentes)
+
+        tab_aprov, tab_nova, tab_hist = st.tabs([
+            f"📋 Aprovações ({qtd_pend})",
+            "📝 Nova ocorrência",
+            "📜 Histórico"
+        ])
+
+    else:
+
+        tab_nova, tab_hist = st.tabs([
+            "📝 Nova ocorrência",
+            "📜 Histórico"
+        ])
+
+        tab_aprov = None
 
 
-
-    # ---------------- APROVAÇÕES ----------------
-
-
-
-        if user['cargo'] in ["Enfermeiro", "Supervisor"]:
-    
-    
-    
-            with tab_aprov:
-    
-                st.header("📋 Gestão de Equipe")
-    
-                meus_lids = st.session_state.vinculos.get(email_logado, [])
-    
-                pends = [o for o in st.session_state.db_ocorrencias if o['status'] == "⏳ Pendente" and o['email_solicitante'] in meus_lids]
-    
-    
-    
-                if pends:
-    
-                    for oc in pends:
-    
-                        with st.container(border=True):
-    
-                            c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
-    
-    
-    
-                            texto = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
-    
-                            if oc.get('horarios'):
-    
-                                texto += f"\n🕒 {oc['horarios']}"
-    
-                            
-    
-                            c_inf.write(texto)
-    
-    
-    
-                            if oc.get("detalhes"):
-    
-                                with c_inf.expander("Ver justificativa"):
-    
-                                    st.write(oc["detalhes"])
-    
-    
-    
-                            # Visualização e Download do Anexo na Aprovação
-    
-                            if oc.get('anexo'):
-    
-                                with c_inf:
-    
-                                    col_view, col_down = st.columns(2)
-    
-                                    
-    
-                                    # 1. Botão de Visualizar (Continua abrindo em nova guia)
-    
-                                    col_view.link_button("👁️ Visualizar", oc["anexo"], use_container_width=True)
-    
-                            
-    
-                                    # 2. Botão de Download Real (Força o download)
-    
-                                    try:
-    
-                                        # Baixa o conteúdo do arquivo da internet para a memória do Python
-    
-                                        conteudo_arquivo = requests.get(oc["anexo"]).content
-    
-                                        
-    
-                                        # Pega o nome original do arquivo pela URL
-    
-                                        nome_original = oc["anexo"].split("/")[-1] 
-    
-                            
-    
-                                        col_down.download_button(
-    
-                                            label="📁 Baixar Direto",
-    
-                                            data=conteudo_arquivo,
-    
-                                            file_name=nome_original,
-    
-                                            mime="application/octet-stream", # Força o navegador a tratar como download
-    
-                                            key=f"btn_dl_{oc['id']}",
-    
-                                            use_container_width=True
-    
-                                        )
-    
-                                    except Exception as e:
-    
-                                        col_down.error("Erro ao preparar download")
-    
-    
-    
-                            # Lógica de Aprovação/Negação
-    
-                            if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
-    
-                                try:
-    
-                                    # Atualiza no Supabase
-    
-                                    supabase.table("ocorrencias").update({"status": "✅ Aprovado", "aprovado_por": user['nome']}).eq("id", oc['id']).execute()
 # ---------------- APROVAÇÕES ----------------
+
 if user['cargo'] in ["Enfermeiro", "Supervisor"]:
 
     with tab_aprov:
+
         st.header("📋 Gestão de Equipe")
+
         meus_lids = st.session_state.vinculos.get(email_logado, [])
-        pends = [o for o in st.session_state.db_ocorrencias if o['status'] == "⏳ Pendente" and o['email_solicitante'] in meus_lids]
+
+        pends = [
+            o for o in st.session_state.db_ocorrencias
+            if o['status'] == "⏳ Pendente"
+            and o['email_solicitante'] in meus_lids
+        ]
 
         if not pends:
+
             st.info("Nenhuma ocorrência pendente para aprovação.")
+
         else:
+
             for oc in pends:
+
                 with st.container(border=True):
+
                     c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
 
-                    # Montagem do texto informacional
-                    texto = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\n**Motivo:** {oc.get('motivo','')}"
+                    texto = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
+
                     if oc.get('horarios'):
                         texto += f"\n🕒 {oc['horarios']}"
-                    
+
                     c_inf.write(texto)
 
                     if oc.get("detalhes"):
                         with c_inf.expander("Ver justificativa"):
                             st.write(oc["detalhes"])
 
-                    # Visualização e Download do Anexo
-                    if oc.get('anexo'):
-                        with c_inf:
-                            col_view, col_down = st.columns(2)
-                            
-                            # 1. Botão de Visualizar
-                            col_view.link_button("👁️ Visualizar", oc["anexo"], use_container_width=True)
-                
-                            # 2. Botão de Download (Otimizado)
-                            nome_original = oc["anexo"].split("/")[-1].split("?")[0] # Limpa parâmetros de URL se houver
-                            conteudo = obter_conteudo_arquivo(oc["anexo"])
+                    # -------- ANEXO --------
 
-                            if conteudo:
+                    if oc.get('anexo'):
+
+                        with c_inf:
+
+                            col_view, col_down = st.columns(2)
+
+                            col_view.link_button(
+                                "👁️ Visualizar",
+                                oc["anexo"],
+                                use_container_width=True
+                            )
+
+                            try:
+
+                                conteudo_arquivo = requests.get(oc["anexo"]).content
+                                nome_original = oc["anexo"].split("/")[-1]
+
                                 col_down.download_button(
                                     label="📁 Baixar Direto",
-                                    data=conteudo,
+                                    data=conteudo_arquivo,
                                     file_name=nome_original,
                                     mime="application/octet-stream",
                                     key=f"btn_dl_{oc['id']}",
                                     use_container_width=True
                                 )
-                            else:
-                                col_down.error("Anexo indisponível")
 
-                    # Lógica de Aprovação
+                            except:
+                                col_down.error("Erro ao preparar download")
+
+                    # -------- APROVAR --------
+
                     if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
+
                         try:
+
                             supabase.table("ocorrencias").update({
-                                "status": "✅ Aprovado", 
+                                "status": "✅ Aprovado",
                                 "aprovado_por": user['nome']
                             }).eq("id", oc['id']).execute()
-                            
-                            st.toast(f"Ocorrência de {oc['solicitante']} aprovada!")
+
                             st.session_state.db_ocorrencias = carregar_ocorrencias()
+
+                            st.success("Ocorrência aprovada!")
+
                             st.rerun()
+
                         except Exception as e:
+
                             st.error(f"Erro ao aprovar: {e}")
-                    
-                    # Lógica de Negação
+
+                    # -------- NEGAR --------
+
                     if c_no.button("❌ Negar", key=f"apr_no_{oc['id']}", use_container_width=True):
+
                         try:
+
                             supabase.table("ocorrencias").update({
-                                "status": "❌ Negado", 
+                                "status": "❌ Negado",
                                 "aprovado_por": user['nome']
                             }).eq("id", oc['id']).execute()
-                            
-                            st.toast("Ocorrência negada.", icon="❌")
+
                             st.session_state.db_ocorrencias = carregar_ocorrencias()
+
+                            st.warning("Ocorrência negada.")
+
                             st.rerun()
+
                         except Exception as e:
+
                             st.error(f"Erro ao negar: {e}")
 
     # ---------------- NOVA OCORRÊNCIA ----------------
@@ -1302,6 +1198,7 @@ if user['cargo'] in ["Enfermeiro", "Supervisor"]:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

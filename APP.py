@@ -1029,10 +1029,19 @@ with tab_nova:
         just = st.text_area("Justificativa / Observações adicionais:")
         
         # OBRIGATORIEDADE DE ANEXO
-        is_obrigatorio = " (Obrigatório)" if motivo_pai in ["Atestado", "Folga"] else " (Opcional)"
-        anexo_f = st.file_uploader(f"📤 Anexar Comprovante{is_obrigatorio}", type=["png", "jpg", "jpeg", "pdf"])
+        anexo_obrigatorio = False
         
-        enviar = st.form_submit_button("🚀 Enviar Solicitação", use_container_width=True)
+        if motivo_pai == "Atestado":
+            anexo_obrigatorio = True
+        elif categoria == "Folga" and detalhe_especifico == "SERVIÇO ELEITORAL (TRE)":
+            anexo_obrigatorio = True
+        
+        is_obrigatorio = " (Obrigatório)" if anexo_obrigatorio else " (Opcional)"
+        
+        anexo_f = st.file_uploader(
+            f"📤 Anexar Comprovante{is_obrigatorio}",
+            type=["png", "jpg", "jpeg", "pdf"]
+        )
 
         # --- PROCESSAMENTO DO ENVIO (Apenas uma vez) ---
         if enviar:
@@ -1042,7 +1051,7 @@ with tab_nova:
                 st.stop()
             
             # 2. Validação de anexo obrigatório
-            if (motivo_pai == "Atestado" or categoria == "Folga") and not anexo_f:
+            if anexo_obrigatorio and not anexo_f:
                 st.error("❌ O anexo é obrigatório para este tipo de solicitação.")
                 st.stop()
 
@@ -1154,6 +1163,7 @@ with tab_nova:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

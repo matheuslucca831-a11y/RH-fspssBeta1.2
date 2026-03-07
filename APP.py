@@ -754,28 +754,20 @@ if user['cargo'] == "Gestor Máximo":
     
                                     # Deixamos apenas o botão de baixar em uma coluna menor se desejar
                                     try:
-                                        # 2. Gera a URL pública
-                                        url_publica = supabase.storage.from_(NOME_BUCKET_REAL).get_public_url(o["anexo"])
-                                        
-                                        # 3. Baixa o conteúdo para o botão
-                                        import requests
-                                        resp = requests.get(url_publica)
-                                        
-                                        if resp.status_code == 200:
-                                            st.download_button(
-                                                label="📁 Baixar Arquivo Original",
-                                                data=resp.content,
-                                                file_name=o["anexo"].split("/")[-1],
-                                                mime="application/octet-stream",
-                                                key=f"btn_dl_{o['id']}",
-                                                use_container_width=True
-                                            )
-                                        else:
-                                            st.error("Erro: Arquivo não encontrado no Storage.")
-                                            
+                                        # Faz a requisição para pegar os dados do arquivo na web
+                                        conteudo_arquivo = requests.get(o["anexo"]).content
+                                        nome_exibicao = o["anexo"].split("/")[-1] # Pega o final da URL como nome
+            
+                                        col_d.download_button(
+                                            label="📁 Baixar Arquivo",
+                                            data=conteudo_arquivo,
+                                            file_name=nome_exibicao,
+                                            mime="application/octet-stream",
+                                            key=f"dl_user_{o['id']}", # Identificador único para cada linha
+                                            use_container_width=True
+                                        )
                                     except Exception as e:
-                                        st.error(f"Erro ao processar download: {e}")
-                                        
+                                        col_d.error("Erro ao processar download")
                                 # Botões de Ação (Arquivar e Excluir)
     
                                 if c2.button("📦 Arquivar", key=f"arq_filt_{o['id']}", use_container_width=True):
@@ -1182,6 +1174,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

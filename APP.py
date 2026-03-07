@@ -304,7 +304,7 @@ if not st.session_state.autenticado:
                     email_login = f"{str(e_in).strip().lower()}@rh.fspss"
                   # buscar usuário
                     busca = supabase.table("usuarios").select("*").execute()
-                    st.write(busca.data)
+                    st.write("Todos usuários:", busca.data)
 
                     st.write("Email gerado:", email_login)
                     st.write("Resultado banco:", busca.data)     
@@ -1116,6 +1116,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

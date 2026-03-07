@@ -609,57 +609,57 @@ if user['cargo'] == "Gestor Máximo":
     
         st.subheader("⚖️ Despacho de Folgas e Abonos")
             
-            # Filtra as solicitações que aguardam a Direção
-            pendentes = [o for o in st.session_state.db_ocorrencias if o.get("status") == "⏳ Aguardando Direção"]
-            
-            if not pendentes:
-                st.info("Não há solicitações aguardando sua aprovação.")
-            else:
-                for f in pendentes:
-                    with st.container(border=True):
-                        c_info, c_acts = st.columns([0.7, 0.3])
-                        
-                        with c_info:
-                            st.markdown(f"### 👤 {f['solicitante']}")
-                            st.write(f"**Tipo:** {f['motivo']} | **Data:** {f['data']}")
-                            st.write(f"**Validado por:** {f.get('aprovado_por', 'Chefia Imediata')}")
-                            
-                            # --- EXIBIÇÃO DA JUSTIFICATIVA ---
-                            if f.get('detalhes'):
-                                st.info(f"**Justificativa do Funcionário:**\n\n{f['detalhes']}")
-                            else:
-                                st.caption("Nenhuma justificativa por escrito foi enviada.")
-                            
-                            # --- EXIBIÇÃO DO ANEXO ---
-                            if f.get('anexo_url'): # Supondo que sua coluna no Supabase se chame 'anexo_url'
-                                st.write("**Documento Anexado:**")
-                                # Verifica se é uma imagem ou PDF (ajuste conforme sua necessidade)
-                                url = f['anexo_url']
-                                if url.lower().endswith(('.png', '.jpg', '.jpeg')):
-                                    st.image(url, caption="Comprovante enviado", use_container_width=True)
-                                else:
-                                    st.link_button("📂 Abrir Documento/PDF", url)
-                            else:
-                                st.warning("⚠️ Nenhum anexo enviado para esta solicitação.")
+        # Filtra as solicitações que aguardam a Direção
+        pendentes = [o for o in st.session_state.db_ocorrencias if o.get("status") == "⏳ Aguardando Direção"]
         
-                        with c_acts:
-                            st.write("###") # Espaçamento
-                            if st.button("✅ DEFERIR", key=f"def_{f['id']}", use_container_width=True):
-                                supabase.table("ocorrencias").update({
-                                    "status": "✅ Deferido",
-                                    "aprovado_por": f"{f.get('aprovado_por')} / Direção"
-                                }).eq("id", f['id']).execute()
-                                st.session_state.db_ocorrencias = carregar_ocorrencias()
-                                st.rerun()
-                                
-                            if st.button("❌ INDEFERIR", key=f"ind_{f['id']}", use_container_width=True):
-                                # Opcional: Adicionar um campo de observação da Direção antes de negar
-                                supabase.table("ocorrencias").update({
-                                    "status": "❌ Indeferido",
-                                    "aprovado_por": "Direção"
-                                }).eq("id", f['id']).execute()
-                                st.session_state.db_ocorrencias = carregar_ocorrencias()
-                                st.rerun()
+        if not pendentes:
+            st.info("Não há solicitações aguardando sua aprovação.")
+        else:
+            for f in pendentes:
+                with st.container(border=True):
+                    c_info, c_acts = st.columns([0.7, 0.3])
+                    
+                    with c_info:
+                        st.markdown(f"### 👤 {f['solicitante']}")
+                        st.write(f"**Tipo:** {f['motivo']} | **Data:** {f['data']}")
+                        st.write(f"**Validado por:** {f.get('aprovado_por', 'Chefia Imediata')}")
+                        
+                        # --- EXIBIÇÃO DA JUSTIFICATIVA ---
+                        if f.get('detalhes'):
+                            st.info(f"**Justificativa do Funcionário:**\n\n{f['detalhes']}")
+                        else:
+                            st.caption("Nenhuma justificativa por escrito foi enviada.")
+                        
+                        # --- EXIBIÇÃO DO ANEXO ---
+                        if f.get('anexo_url'): # Supondo que sua coluna no Supabase se chame 'anexo_url'
+                            st.write("**Documento Anexado:**")
+                            # Verifica se é uma imagem ou PDF (ajuste conforme sua necessidade)
+                            url = f['anexo_url']
+                            if url.lower().endswith(('.png', '.jpg', '.jpeg')):
+                                st.image(url, caption="Comprovante enviado", use_container_width=True)
+                            else:
+                                st.link_button("📂 Abrir Documento/PDF", url)
+                        else:
+                            st.warning("⚠️ Nenhum anexo enviado para esta solicitação.")
+    
+                    with c_acts:
+                        st.write("###") # Espaçamento
+                        if st.button("✅ DEFERIR", key=f"def_{f['id']}", use_container_width=True):
+                            supabase.table("ocorrencias").update({
+                                "status": "✅ Deferido",
+                                "aprovado_por": f"{f.get('aprovado_por')} / Direção"
+                            }).eq("id", f['id']).execute()
+                            st.session_state.db_ocorrencias = carregar_ocorrencias()
+                            st.rerun()
+                            
+                        if st.button("❌ INDEFERIR", key=f"ind_{f['id']}", use_container_width=True):
+                            # Opcional: Adicionar um campo de observação da Direção antes de negar
+                            supabase.table("ocorrencias").update({
+                                "status": "❌ Indeferido",
+                                "aprovado_por": "Direção"
+                            }).eq("id", f['id']).execute()
+                            st.session_state.db_ocorrencias = carregar_ocorrencias()
+                            st.rerun()
 
 
 
@@ -1157,6 +1157,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

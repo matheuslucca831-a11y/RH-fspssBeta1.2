@@ -751,7 +751,7 @@ if user['cargo'] == "Gestor Máximo":
                                         exibir_anexo(o["anexo"])
     
                                     
-    
+                                        NOME_DO_BUCKET = "anexos"
                                     # Deixamos apenas o botão de baixar em uma coluna menor se desejar
                                     try:
                                         # 1. Gerar a URL pública
@@ -1198,6 +1198,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

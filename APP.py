@@ -754,44 +754,28 @@ if user['cargo'] == "Gestor Máximo":
                                         NOME_DO_BUCKET = "anexos"
                                     # Deixamos apenas o botão de baixar em uma coluna menor se desejar
                                     try:
-                                        # 1. Gerar a URL pública
-                                        url_data = supabase.storage.from_(NOME_DO_BUCKET).get_public_url(o["anexo"])
-                                        
-                                        # Algumas versões retornam dict
-                                        if isinstance(url_data, dict):
-                                            url_arquivo = url_data.get("publicUrl")
-                                        else:
-                                            url_arquivo = url_data
                                     
-                                        if url_arquivo:
-                                    
-                                            # 2. Baixa os bytes do arquivo
-                                            response = requests.get(url_arquivo)
+                                            response = requests.get(o["anexo"])
                                     
                                             if response.status_code == 200:
                                     
                                                 conteudo_arquivo = response.content
-                                                nome_original = o["anexo"].split("/")[-1]
+                                                nome_exibicao = o["anexo"].split("/")[-1]
                                     
-                                                # 3. Botão de download
-                                                st.download_button(
+                                                col_d.download_button(
                                                     label="📁 Baixar Arquivo",
                                                     data=conteudo_arquivo,
-                                                    file_name=nome_original,
+                                                    file_name=nome_exibicao,
                                                     mime="application/octet-stream",
-                                                    key=f"dl_adm_final_{o['id']}",
+                                                    key=f"dl_user_{o['id']}",
                                                     use_container_width=True
                                                 )
                                     
                                             else:
-                                                st.error(f"Erro ao acessar arquivo no Storage: {response.status_code}")
+                                                col_d.error(f"Erro ao acessar arquivo ({response.status_code})")
                                     
-                                        else:
-                                            st.error("URL do arquivo não encontrada no Supabase")
-                                    
-                                    except Exception as e:
-                                        st.error("Erro ao gerar download do arquivo")
-                                        st.write(e)
+                                        except Exception as e:
+                                            col_d.error("Erro ao processar download")
                                 # Botões de Ação (Arquivar e Excluir)
     
                                 if c2.button("📦 Arquivar", key=f"arq_filt_{o['id']}", use_container_width=True):
@@ -1198,6 +1182,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

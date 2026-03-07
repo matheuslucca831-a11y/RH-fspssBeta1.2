@@ -798,32 +798,32 @@ with t_hist:
 # --------------------------------------------------
 # 6. VISÃO OPERACIONAL (ENFERMEIRO, SUPERVISOR, FUNCIONÁRIO)
 # --------------------------------------------------
+
+
+if user['cargo'] in ["Enfermeiro", "Supervisor"]:
+    meus_lids = st.session_state.vinculos.get(email_logado, [])
+
+    pendentes = [
+        o for o in st.session_state.db_ocorrencias
+        if o["status"] == "⏳ Pendente"
+        and o["email_solicitante"] in meus_lids
+    ]
+
+    qtd_pend = len(pendentes)
+
+    tab_aprov, tab_nova, tab_hist = st.tabs(
+        
+       [ f"📋 Aprovações ({qtd_pend})",
+        "📝 Nova ocorrência",
+        "📜 Histórico"
+        ]
+    )
+
 else:
 
-    if user['cargo'] in ["Enfermeiro", "Supervisor"]:
-        meus_lids = st.session_state.vinculos.get(email_logado, [])
-
-        pendentes = [
-            o for o in st.session_state.db_ocorrencias
-            if o["status"] == "⏳ Pendente"
-            and o["email_solicitante"] in meus_lids
-        ]
-
-        qtd_pend = len(pendentes)
-
-        tab_aprov, tab_nova, tab_hist = st.tabs(
-            
-           [ f"📋 Aprovações ({qtd_pend})",
-            "📝 Nova ocorrência",
-            "📜 Histórico"
-            ]
-        )
-
-    else:
-
-        tab_nova, tab_hist = st.tabs(
-            ["📝 Nova ocorrência", "📜 Histórico"]
-        )
+    tab_nova, tab_hist = st.tabs(
+        ["📝 Nova ocorrência", "📜 Histórico"]
+    )
 
 # ---------------- APROVAÇÕES ----------------
 if user['cargo'] in ["Enfermeiro", "Supervisor"]:
@@ -1073,6 +1073,7 @@ if user['cargo'] in ["Enfermeiro", "Supervisor"]:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

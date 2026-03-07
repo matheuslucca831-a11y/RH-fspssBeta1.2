@@ -631,7 +631,7 @@ if user['cargo'] == "Gestor Máximo":
                     
                     # --- 2. INTERFACE DE FILTROS ---
                     with st.container(border=True):
-                        f1, f2, f3, f4 = st.columns(4)
+                        f1, f2, f3, f4, f5 = st.columns(5)
                         
                         with f1:
                             f_nome = st.text_input("👤 Nome", placeholder="Buscar...")
@@ -647,6 +647,8 @@ if user['cargo'] == "Gestor Máximo":
                             f_motivo = st.selectbox("💡 Motivo", opcoes_motivo)
                         with f4:
                             f_data_sel = st.date_input("📅 Data", value=None, format="DD/MM/YYYY")
+                        with f5:
+                        ordem = st.selectbox("⏳ Ordem", ["Mais Recentes", "Mais Antigas"])
     
                     # --- 3. LÓGICA DE FILTRAGEM (Ajustada para os novos grupos) ---
                     mask = df_oc["arquivado"] != "Sim"
@@ -671,6 +673,9 @@ if user['cargo'] == "Gestor Máximo":
                         mask &= df_oc["data"].astype(str).str.contains(data_str, na=False)
     
                     df_filtrado = df_oc[mask]
+
+                    ordem_crescente = (ordem == "Mais Antigas")
+                    df_filtrado = df_filtrado.sort_values(by="id", ascending=ordem_crescente)
     
                     # --- 4. EXIBIÇÃO DOS CARDS ---
                     if df_filtrado.empty:
@@ -1109,6 +1114,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

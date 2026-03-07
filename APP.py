@@ -921,14 +921,33 @@ else:
                     with st.container(border=True):
                         c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
                         
-                        # Infos básicas
-                        texto = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
-                        if oc.get('horarios'): texto += f"\n🕒 {oc['horarios']}"
-                        c_inf.write(texto)
+                        # --- NOVO BLOCO DE INFOS + JUSTIFICATIVA + ANEXO ---
+                        texto_base = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
+                        if oc.get('horarios'): 
+                            texto_base += f"\n🕒 {oc['horarios']}"
+                        c_inf.write(texto_base)
                         
-                        if oc.get("detalhes"):
-                            with c_inf.expander("Ver justificativa"):
-                                st.write(oc["detalhes"])
+                        # Criamos um único expander para não poluir a tela
+                        with c_inf.expander("📄 Detalhes e Documentos"):
+                            # Mostra a justificativa se existir
+                            if oc.get("detalhes"):
+                                st.write(f"**Justificativa:** {oc['detalhes']}")
+                            
+                            # BUSCA O ANEXO (Tenta os dois nomes de coluna mais comuns)
+                            link_arquivo = oc.get("anexo") or oc.get("anexo_url")
+                            
+                            if link_arquivo:
+                                st.divider() # Linha para separar texto do anexo
+                                st.write("**Comprovante:**")
+                                
+                                # Se o link terminar com imagem, ele abre direto
+                                if any(ext in str(link_arquivo).lower() for ext in ['.png', '.jpg', '.jpeg']):
+                                    st.image(link_arquivo, use_container_width=True)
+                                else:
+                                    # Se for PDF ou outro arquivo, cria um botão para abrir
+                                    st.link_button("📂 Abrir Arquivo/PDF", link_arquivo)
+                            else:
+                                st.caption("⚠️ Nenhum anexo enviado.")
 
                         # --- BOTÃO APROVAR (A lógica muda conforme o cargo) ---
                         if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
@@ -1125,6 +1144,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

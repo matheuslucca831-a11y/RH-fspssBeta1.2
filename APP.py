@@ -845,157 +845,95 @@ if user['cargo'] == "Gestor Máximo":
 # --------------------------------------------------
 
 else:
-
+    # --- LÓGICA DE FILTRAGEM DE PENDÊNCIAS ---
+    meus_lids = st.session_state.vinculos.get(email_logado, [])
+    
     if user['cargo'] in ["Enfermeiro", "Supervisor"]:
-
-        meus_lids = st.session_state.vinculos.get(email_logado, [])
-
+        # Enfermeiro vê o que é "Pendente" dos seus liderados
         pendentes = [
-            o for o in st.session_state.db_ocorrencias
-            if o["status"] == "⏳ Pendente"
-            and o["email_solicitante"] in meus_lids
+            o for o in st.session_state.db_ocorrencias 
+            if o["status"] == "⏳ Pendente" and o["email_solicitante"] in meus_lids
         ]
-
-        qtd_pend = len(pendentes)
-
+        
         tab_aprov, tab_nova, tab_hist = st.tabs([
-            f"📋 Aprovações ({qtd_pend})",
-            "📝 Nova ocorrência",
-            "📜 Histórico"
+            f"📋 Aprovações ({len(pendentes)})", "📝 Nova ocorrência", "📜 Histórico"
         ])
-
+        
+    elif user['cargo'] == "Gestor Máximo":
+        # Diretor vê especificamente o que aguarda a direção
+        pendentes = [
+            o for o in st.session_state.db_ocorrencias 
+            if o["status"] == "⏳ Aguardando Direção"
+        ]
+        tab_aprov, tab_nova, tab_hist = st.tabs([
+            f"🏛️ Decisão Final ({len(pendentes)})", "📝 Nova ocorrência", "📜 Histórico"
+        ])
     else:
-
-        tab_nova, tab_hist = st.tabs([
-            "📝 Nova ocorrência",
-            "📜 Histórico"
-        ])
-
+        tab_nova, tab_hist = st.tabs(["📝 Nova ocorrência", "📜 Histórico"])
         tab_aprov = None
 
-
-# ---------------- APROVAÇÕES ----------------
-
-    if user['cargo'] in ["Enfermeiro", "Supervisor"]:
-    
+    # ---------------- TAB APROVAÇÕES (Lógica Dupla) ----------------
+    if tab_aprov:
         with tab_aprov:
-    
-            st.header("📋 Gestão de Equipe")
-    
-            meus_lids = st.session_state.vinculos.get(email_logado, [])
-    
-            pends = [
-                o for o in st.session_state.db_ocorrencias
-                if o['status'] == "⏳ Pendente"
-                and o['email_solicitante'] in meus_lids
-            ]
-    
-            if not pends:
-    
-                st.info("Nenhuma ocorrência pendente para aprovação.")
-    
+            st.header("📋 Gestão de Ocorrências")
+            
+            if not pendentes:
+                st.info("Nada pendente para sua análise no momento.")
             else:
-    
-                for oc in pends:
-    
+                for oc in pendentes:
                     with st.container(border=True):
-    
                         c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
-    
+                        
+                        # Infos básicas
                         texto = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
-    
-                        if oc.get('horarios'):
-                            texto += f"\n🕒 {oc['horarios']}"
-    
+                        if oc.get('horarios'): texto += f"\n🕒 {oc['horarios']}"
                         c_inf.write(texto)
-    
+                        
                         if oc.get("detalhes"):
                             with c_inf.expander("Ver justificativa"):
                                 st.write(oc["detalhes"])
-    
-                        # -------- ANEXO --------
-    
-                        if oc.get('anexo'):
-    
-                            with c_inf:
-    
-                                col_view, col_down = st.columns(2)
-    
-                                col_view.link_button(
-                                    "👁️ Visualizar",
-                                    oc["anexo"],
-                                    use_container_width=True
-                                )
-    
-                                try:
-    
-                                    conteudo_arquivo = requests.get(oc["anexo"]).content
-                                    nome_original = oc["anexo"].split("/")[-1]
-    
-                                    col_down.download_button(
-                                        label="📁 Baixar Direto",
-                                        data=conteudo_arquivo,
-                                        file_name=nome_original,
-                                        mime="application/octet-stream",
-                                        key=f"btn_dl_{oc['id']}",
-                                        use_container_width=True
-                                    )
-    
-                                except:
-                                    col_down.error("Erro ao preparar download")
-    
-                        # -------- APROVAR --------
-    
+
+                        # --- BOTÃO APROVAR (A lógica muda conforme o cargo) ---
                         if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
-    
+                            novo_status = "✅ Aprovado"
+                            info_msg = "Ocorrência finalizada com sucesso!"
+                            
+                            # Se for Enfermeiro aprovando Folga, sobe para o Diretor
+                            if user['cargo'] in ["Enfermeiro", "Supervisor"] and oc['motivo'] == "Folga":
+                                novo_status = "⏳ Aguardando Direção"
+                                info_msg = "Folga enviada para decisão do Gestor Máximo."
+                            
                             try:
-    
                                 supabase.table("ocorrencias").update({
-                                    "status": "✅ Aprovado",
-                                    "aprovado_por": user['nome']
+                                    "status": novo_status,
+                                    "aprovado_por": f"{user['nome']} ({user['cargo']})"
                                 }).eq("id", oc['id']).execute()
-    
+                                
                                 st.session_state.db_ocorrencias = carregar_ocorrencias()
-    
-                                st.success("Ocorrência aprovada!")
-    
+                                st.success(info_msg)
                                 st.rerun()
-    
                             except Exception as e:
-    
-                                st.error(f"Erro ao aprovar: {e}")
-    
-                        # -------- NEGAR --------
-    
+                                st.error(f"Erro: {e}")
+
+                        # --- BOTÃO NEGAR ---
                         if c_no.button("❌ Negar", key=f"apr_no_{oc['id']}", use_container_width=True):
-    
                             try:
-    
                                 supabase.table("ocorrencias").update({
                                     "status": "❌ Negado",
-                                    "aprovado_por": user['nome']
+                                    "aprovado_por": f"{user['nome']} ({user['cargo']})"
                                 }).eq("id", oc['id']).execute()
-    
                                 st.session_state.db_ocorrencias = carregar_ocorrencias()
-    
                                 st.warning("Ocorrência negada.")
-    
                                 st.rerun()
-    
                             except Exception as e:
-    
-                                st.error(f"Erro ao negar: {e}")
+                                st.error(f"Erro: {e}")
 
-    # ---------------- NOVA OCORRÊNCIA ----------------
-
+    # ---------------- TAB NOVA OCORRÊNCIA (Apenas adicionei o motivo 'Folga') ----------------
     with tab_nova:
-                st.header("📝 Minhas Ocorrências de Ponto")
-                
-                # O selectbox e o form PRECISAM estar recuados (identados) dentro do with tab_nova
-                mot = st.selectbox(
-                    "Motivo",
-                    ["Esquecimento", "Atestado", "Erro no Relógio", "Outro"]
-                )
+        st.header("📝 Minhas Ocorrências de Ponto")
+        mot = st.selectbox("Motivo", ["Esquecimento", "Atestado", "Folga", "Erro no Relógio", "Outro"])
+        
+        with st.form("f_ponto", clear_on_submit=True):
     
                 with st.form("f_ponto", clear_on_submit=True):
                     col_a, col_b = st.columns(2)
@@ -1156,6 +1094,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

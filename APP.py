@@ -648,7 +648,7 @@ if user['cargo'] == "Gestor Máximo":
                         with f4:
                             f_data_sel = st.date_input("📅 Data", value=None, format="DD/MM/YYYY")
                         with f5:
-                        ordem = st.selectbox("⏳ Ordem", ["Mais Recentes", "Mais Antigas"])
+                            ordem = st.selectbox("⏳ Ordem", ["Mais Recentes", "Mais Antigas"])
     
                     # --- 3. LÓGICA DE FILTRAGEM (Ajustada para os novos grupos) ---
                     mask = df_oc["arquivado"] != "Sim"
@@ -1114,6 +1114,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

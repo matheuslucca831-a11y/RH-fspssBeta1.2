@@ -754,29 +754,28 @@ if user['cargo'] == "Gestor Máximo":
     
                                     # Deixamos apenas o botão de baixar em uma coluna menor se desejar
                                     try:
-                                            # 1. Obter a URL pública do Supabase (Ajuste 'atestados' para o nome do seu bucket)
-                                            # Se o seu 'o["anexo"]' já for a URL completa, pode pular esta linha e usar o['anexo'] direto
-                                            url_arquivo = supabase.storage.from_("atestados").get_public_url(o["anexo"])
+                                        # 1. Gerar a URL pública (ajusta o caminho do Storage para um link acessível)
+                                        url_arquivo = supabase.storage.from_(NOME_DO_BUCKET).get_public_url(o["anexo"])
+                                        
+                                        # 2. Sua lógica: baixa os bytes do arquivo para a memória
+                                        response = requests.get(url_arquivo)
+                                        
+                                        if response.status_code == 200:
+                                            conteudo_arquivo = response.content
+                                            nome_original = o["anexo"].split("/")[-1] 
+                                
+                                            # 3. Botão de download idêntico ao que você solicitou
+                                            st.download_button(
+                                                label="📁 Baixar Arquivo",
+                                                data=conteudo_arquivo,
+                                                file_name=nome_original,
+                                                mime="application/octet-stream",
+                                                key=f"dl_adm_final_{o['id']}", 
+                                                use_container_width=True
+                                            )
+                                        else:
+                                            st.error(f"Erro ao acessar arquivo no Storage: {response.status_code}")
                                             
-                                            # 2. Faz a requisição para pegar os dados do arquivo na web (Sua lógica que funciona)
-                                            response = requests.get(url_arquivo)
-                                            
-                                            if response.status_code == 200:
-                                                conteudo_arquivo = response.content
-                                                nome_exibicao = o["anexo"].split("/")[-1] 
-                                    
-                                                # 3. Botão de download idêntico ao solicitado
-                                                st.download_button(
-                                                    label="📁 Baixar Arquivo",
-                                                    data=conteudo_arquivo,
-                                                    file_name=nome_exibicao,
-                                                    mime="application/octet-stream",
-                                                    key=f"dl_adm_{o['id']}", # Key única baseada no ID da ocorrência
-                                                    use_container_width=True
-                                                )
-                                            else:
-                                                st.error(f"Erro ao acessar arquivo: {response.status_code}")
-                                                
                                     except Exception as e:
                                         st.error(f"Erro ao processar download: {e}")
                                 # Botões de Ação (Arquivar e Excluir)
@@ -1185,6 +1184,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

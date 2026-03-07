@@ -369,8 +369,13 @@ st.title(f"Olá, {user['nome']}!")
 # --------------------------------------------------
 if user['cargo'] == "Gestor Máximo":
     st.header("Painel Administrativo Central")
-    t_users, t_vinc, t_hist, t_arq = st.tabs(["👥 Equipe", "🔗 Vínculos", "📊 Monitoramento", "📦 Arquivo Morto"])
-
+    t_equipe, t_vinc, t_aprovar, t_hist, t_arquivo = st.tabs([
+        "👥 Equipe", 
+        "🔗 Vínculos", 
+        "✅ Aprovar Folgas", # Nova aba dedicada
+        "📊 Monitoramento", 
+        "📦 Arquivo Morto"
+    ])
     with t_users:
         with st.expander("➕ Novo Usuário"):
             with st.form("cad_u", clear_on_submit=True):
@@ -599,6 +604,59 @@ if user['cargo'] == "Gestor Máximo":
                                         del st.session_state[f"editando_{l_email}"]
                                     st.rerun()
 
+
+    with t_aprovar
+    
+        st.header("⚖️ Decisões da Direção")
+        st.markdown("---")
+    
+        # Filtra ocorrências que já passaram pelo Enfermeiro e esperam a Direção
+        pendentes_direcao = [o for o in st.session_state.db_ocorrencias if o["status"] == "⏳ Aguardando Direção"]
+    
+        if not pendentes_direcao:
+            st.info("Não há folgas aguardando sua aprovação no momento.")
+        else:
+            st.warning(f"Existem {len(pendentes_direcao)} solicitações que precisam do seu despacho.")
+            
+            for f in pendentes_direcao:
+                # Título do card com nome e data
+                with st.container(border=True):
+                    col_txt, col_btn = st.columns([0.7, 0.3])
+                    
+                    with col_txt:
+                        st.subheader(f"👤 {f['solicitante']}")
+                        st.write(f"**Tipo de Folga:** {f['motivo']}") 
+                        st.write(f"**Período:** {f['data']}")
+                        st.caption(f"Validado previamente por: {f.get('aprovado_por', 'Chefia Imediata')}")
+                    
+                    with col_btn:
+                        st.write("###") # Alinhamento
+                        # Botão de Deferido (Verde)
+                        if st.button("✅ DEFERIR", key=f"def_{f['id']}", use_container_width=True):
+                            supabase.table("ocorrencias").update({
+                                "status": "✅ Deferido",
+                                "aprovado_por": f"{f.get('aprovado_por')} / Direção"
+                            }).eq("id", f['id']).execute()
+                            st.toast(f"Folga de {f['solicitante']} deferida!")
+                            st.rerun()
+    
+                        # Botão de Indeferido (Vermelho)
+                        if st.button("❌ INDEFERIR", key=f"ind_{f['id']}", use_container_width=True):
+                            motivo_ind = st.text_input("Motivo do Indeferimento:", key=f"mot_{f['id']}")
+                            if motivo_ind:
+                                supabase.table("ocorrencias").update({
+                                    "status": "❌ Indeferido",
+                                    "detalhes": f"Motivo: {motivo_ind}",
+                                    "aprovado_por": "Direção"
+                                }).eq("id", f['id']).execute()
+                                st.rerun()
+                            else:
+                                st.error("Por favor, informe o motivo antes de indeferir.")
+
+
+
+
+    
     with t_hist:
     
             st.subheader("📊 Monitoramento Geral")
@@ -1118,6 +1176,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

@@ -666,80 +666,48 @@ if user['cargo'] == "Gestor Máximo":
 
     
     with t_hist:
+        st.subheader("📊 Monitoramento Geral")
     
-            st.subheader("📊 Monitoramento Geral")
+        if st.session_state.db_ocorrencias:
+            df_oc = pd.DataFrame(st.session_state.db_ocorrencias)
     
+            with st.container(border=True):
+                f1, f2, f3, f4 = st.columns(4)
     
+                with f1:
+                    f_nome = st.text_input("👤 Nome", placeholder="Buscar...")
+                with f2:
+                    opcoes_status = ["Todos"] + sorted(list(df_oc["status"].unique()))
+                    f_status = st.selectbox("📌 Status", opcoes_status)
+                with f3:
+                    # --- ADIÇÃO DA OPÇÃO AGRUPADA ---
+                    opcoes_motivo = ["Todos", "🎯 Todas as Folgas"] + sorted(list(df_oc["motivo"].unique()))
+                    f_motivo = st.selectbox("💡 Motivo", opcoes_motivo)
+                with f4:
+                    f_data_sel = st.date_input("📅 Data", value=None, format="DD/MM/YYYY")
     
-            # 1. CONVERSÃO PARA DATAFRAME (Para que os filtros funcionem)
+            # --- LÓGICA DE FILTRAGEM ATUALIZADA ---
+            mask = df_oc["arquivado"] != "Sim"
     
-            if st.session_state.db_ocorrencias:
+            if f_nome:
+                mask &= df_oc["solicitante"].str.contains(f_nome, case=False, na=False)
+            
+            if f_status != "Todos":
+                mask &= df_oc["status"] == f_status
     
-                df_oc = pd.DataFrame(st.session_state.db_ocorrencias)
+            if f_motivo == "🎯 Todas as Folgas":
+                # Filtra qualquer motivo que contenha a palavra "Folga" (ignora maiúsculas/minúsculas)
+                mask &= df_oc["motivo"].str.contains("Folga", case=False, na=False)
+            elif f_motivo != "Todos":
+                mask &= df_oc["motivo"] == f_motivo
     
-                
+            if f_data_sel:
+                data_str = f_data_sel.strftime("%Y-%m-%d")
+                mask &= df_oc["data"].str.contains(data_str, na=False)
     
-                # 2. ÁREA DE FILTROS (CALENDÁRIO + SELECTS)
-    
-                with st.container(border=True):
-    
-                    f1, f2, f3, f4 = st.columns(4)
-    
-                    
-    
-                    with f1:
-    
-                        f_nome = st.text_input("👤 Nome", placeholder="Buscar...")
-    
-                    with f2:
-    
-                        opcoes_status = ["Todos"] + sorted(list(df_oc["status"].unique()))
-    
-                        f_status = st.selectbox("📌 Status", opcoes_status)
-    
-                    with f3:
-    
-                        opcoes_motivo = ["Todos"] + sorted(list(df_oc["motivo"].unique()))
-    
-                        f_motivo = st.selectbox("💡 Motivo", opcoes_motivo)
-    
-                    with f4:
-    
-                        # Calendário para o filtro de data
-    
-                        f_data_sel = st.date_input("📅 Data", value=None, format="DD/MM/YYYY")
-    
-    
-    
-                # 3. LÓGICA DE FILTRAGEM (Máscara)
-    
-                mask = df_oc["arquivado"] != "Sim"
-    
-                
-    
-                if f_nome:
-    
-                    mask &= df_oc["solicitante"].str.contains(f_nome, case=False, na=False)
-    
-                if f_status != "Todos":
-    
-                    mask &= df_oc["status"] == f_status
-    
-                if f_motivo != "Todos":
-    
-                    mask &= df_oc["motivo"] == f_motivo
-    
-                if f_data_sel:
-    
-                    # Transforma a data do calendário para o texto do CSV (AAAA-MM-DD)
-    
-                    data_str = f_data_sel.strftime("%Y-%m-%d")
-    
-                    mask &= df_oc["data"].str.contains(data_str, na=False)
-    
-    
-    
-                df_filtrado = df_oc[mask]
+            df_filtrado = df_oc[mask]
+
+
     
     
                     # 4. EXIBIÇÃO DOS CARDS FILTRADOS (Substitua daqui para baixo)
@@ -1157,6 +1125,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

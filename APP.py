@@ -755,23 +755,16 @@ if user['cargo'] == "Gestor Máximo":
                                     # Deixamos apenas o botão de baixar em uma coluna menor se desejar
     
                                     try:
-    
-                                        with open(o["anexo"], "rb") as f:
-    
-                                            st.download_button(
-    
-                                                label="📁 Baixar Arquivo Original",
-    
-                                                data=f,
-    
-                                                file_name=os.path.basename(o["anexo"]),
-    
-                                                key=f"dl_full_{o['id']}",
-    
-                                                use_container_width=True
-    
-                                            )
-    
+                                        # Em vez de open(o["anexo"]), geramos a URL do Supabase
+                                        # 'atestados' é o nome do seu bucket no Supabase Storage
+                                        file_url = supabase.storage.from_("atestados").get_public_url(o["anexo"])
+                                        
+                                        # Criamos um link estilizado como botão ou usamos st.link_button
+                                        st.link_button(
+                                            label="📁 Baixar Arquivo Original",
+                                            url=file_url,
+                                            use_container_width=True
+                                        )
                                     except:
     
                                         st.error("Erro ao carregar arquivo para download.")
@@ -1182,6 +1175,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

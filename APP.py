@@ -777,8 +777,8 @@ if user['cargo'] == "Gestor Máximo":
                                             else:
                                                 st.error(f"Erro ao acessar arquivo: {response.status_code}")
                                                 
-                                        except Exception as e:
-                                            st.error(f"Erro ao processar download: {e}")
+                                    except Exception as e:
+                                        st.error(f"Erro ao processar download: {e}")
                                 # Botões de Ação (Arquivar e Excluir)
     
                                 if c2.button("📦 Arquivar", key=f"arq_filt_{o['id']}", use_container_width=True):
@@ -1185,6 +1185,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

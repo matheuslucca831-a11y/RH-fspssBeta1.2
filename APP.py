@@ -90,8 +90,8 @@ usuario_existe = supabase.table("usuarios").select("*").eq("email", "0001").exec
 
 if len(usuario_existe.data) == 0:
     usuario_padrao = {
-        "email": "0001",
-        "nome": "Gestor Master",
+        "email": "0001@rh.fspss",
+        "nome": "Administrador",
         "cargo": "Gestor Máximo",
         "matricula": gerar_hash("admin123")
     }
@@ -1124,6 +1124,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

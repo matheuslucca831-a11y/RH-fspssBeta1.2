@@ -816,7 +816,7 @@ with t_hist:
 
 
 
-    with t_arq:
+with t_arq:
 
         st.subheader("📦 Arquivo Morto - Ocorrências Arquivadas")
 
@@ -1302,6 +1302,7 @@ if user['cargo'] in ["Enfermeiro", "Supervisor"]:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

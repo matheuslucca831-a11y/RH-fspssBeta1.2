@@ -524,7 +524,6 @@ if user['cargo'] == "Gestor Máximo":
                 
                 # --- PARTE 2: FILTRO POR NOME ---
                 
-                st.write(st.session_state.vinculos)
                 
                 st.markdown("### 📋 Configuração Atual")
                 
@@ -1144,6 +1143,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

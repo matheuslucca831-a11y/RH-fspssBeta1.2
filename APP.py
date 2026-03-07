@@ -862,12 +862,12 @@ else:
     elif user['cargo'] == "Gestor Máximo":
         # Diretor vê especificamente o que aguarda a direção
         pendentes = [
-            o for o in st.session_state.db_ocorrencias 
-            if o["status"] == "⏳ Aguardando Direção"
-        ]
-        tab_aprov, tab_nova, tab_hist = st.tabs([
-            f"🏛️ Decisão Final ({len(pendentes)})", "📝 Nova ocorrência", "📜 Histórico"
-        ])
+                o for o in st.session_state.db_ocorrencias 
+                if o["status"] == "⏳ Aguardando Direção"
+            ]
+            tab_aprov, tab_nova, tab_hist = st.tabs([
+                f"🏛️ Decisão Final ({len(pendentes)})", "📝 Nova ocorrência", "📜 Histórico"
+            ])
     else:
         tab_nova, tab_hist = st.tabs(["📝 Nova ocorrência", "📜 Histórico"])
         tab_aprov = None
@@ -895,25 +895,27 @@ else:
 
                         # --- BOTÃO APROVAR (A lógica muda conforme o cargo) ---
                         if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
-                            novo_status = "✅ Aprovado"
-                            info_msg = "Ocorrência finalizada com sucesso!"
-                            
-                            # Se for Enfermeiro aprovando Folga, sobe para o Diretor
-                            if user['cargo'] in ["Enfermeiro", "Supervisor"] and oc['motivo'] == "Folga":
+                            # Regra de Ouro: Se for folga, muda o status para o Gestor Máximo ver
+                            if "Folga" in oc['motivo']:
                                 novo_status = "⏳ Aguardando Direção"
-                                info_msg = "Folga enviada para decisão do Gestor Máximo."
-                            
+                                info_msg = "Folga aprovada e enviada para o Gestor Máximo!"
+                            else:
+                                # Outros motivos (esquecimento, erro de relógio) o Enfermeiro já finaliza
+                                novo_status = "✅ Aprovado"
+                                info_msg = "Ocorrência finalizada com sucesso!"
+                        
                             try:
+                                # Atualiza no Supabase
                                 supabase.table("ocorrencias").update({
                                     "status": novo_status,
-                                    "aprovado_por": f"{user['nome']} ({user['cargo']})"
+                                    "aprovado_por": f"{user['nome']} (Enfermeiro/Supervisor)"
                                 }).eq("id", oc['id']).execute()
                                 
                                 st.session_state.db_ocorrencias = carregar_ocorrencias()
                                 st.success(info_msg)
                                 st.rerun()
                             except Exception as e:
-                                st.error(f"Erro: {e}")
+                                st.error(f"Erro ao processar: {e}")
 
                         # --- BOTÃO NEGAR ---
                         if c_no.button("❌ Negar", key=f"apr_no_{oc['id']}", use_container_width=True):
@@ -1086,6 +1088,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

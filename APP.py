@@ -986,97 +986,90 @@ else:
                                 st.error(f"Erro: {e}")
 
 # ---------------- TAB NOVA OCORRÊNCIA ----------------
-    with tab_nova:
-        st.header("📝 Minhas Ocorrências de Ponto")
-        
-        # Motivos principais
-        mot = st.selectbox("Motivo Principal", ["Esquecimento", "Atestado", "Folga", "Erro no Relógio", "Outro"])
-        
-        # Variável para detalhamento da folga
-        detalhe_folga = ""
-        
-        # Se for Folga, mostra as opções do formulário oficial
-        if mot == "Folga":
-            detalhe_folga = st.selectbox("Folga referente a:", [
-                "BANCO DE HORAS",
-                "FOLGA ABONADA (Art. 56, XII)",
-                "SERVIÇO ELEITORAL (TRE)",
-                "CAMPANHA DE VACINAÇÃO",
-                "CONVOCAÇÃO TRABALHO EVENTUAL",
-                "CONVOCAÇÃO CONCURSO PÚBLICO",
-                "ABONO NATALÍCIO (Art. 56, X)",
-                "OUTROS"
-            ])
-
-        with st.form("f_ponto_unico", clear_on_submit=True):
+    with st.form("f_ponto_unico", clear_on_submit=True):
             col_a, col_b = st.columns(2)
             data_inicio = col_a.date_input("Data inicial")
             data_fim = col_b.date_input("Data final")
-
-            # Atestado e Folga não precisam de horários manuais
-            if mot not in ["Atestado", "Folga"]:
-                st.write("Preencha os horários")
+    
+            # 3. Lógica de Horários (Só aparece para Esquecimento e Erro no Relógio)
+            if motivo_pai in ["Esquecimento", "Erro no Relógio", "Outros"]:
+                st.write("---")
+                st.write("📌 **Preencha os horários que precisam de ajuste:**")
                 h_cols = st.columns(4)
                 h1 = h_cols[0].time_input("Entrada", value=time(0,0))
                 h2 = h_cols[1].time_input("S. Almoço", value=time(0,0))
                 h3 = h_cols[2].time_input("R. Almoço", value=time(0,0))
                 h4 = h_cols[3].time_input("Saída", value=time(0,0))
+                txt_h = f"{h1.strftime('%H:%M')} | {h2.strftime('%H:%M')} | {h3.strftime('%H:%M')} | {h4.strftime('%H:%M')}"
             else:
-                h1 = h2 = h3 = h4 = None
-                st.info(f"Ocorrência de {mot} registrada como período integral.")
-
-            just = st.text_area("Justificativa / Observações adicionais:")
-            anexo_f = st.file_uploader("Comprovante/Declaração (Obrigatório para TRE/Atestado)", type=["png", "jpg", "jpeg", "pdf"])
+                # Para Folga e Atestado, assume-se período integral ou conforme documento
+                txt_h = "Período Integral"
+    
+            st.write("---")
+            just = st.text_area("Justificativa / Observações:")
             
-            enviar = st.form_submit_button("Enviar Solicitação", use_container_width=True)
-
+            # Mensagem dinâmica sobre a obrigatoriedade do anexo
+            msg_anexo = "📤 Anexar Comprovante (Obrigatório para Atestado/TRE)" if motivo_pai in ["Atestado", "Folga"] else "📤 Anexar Comprovante (Opcional)"
+            anexo_f = st.file_uploader(msg_anexo, type=["png", "jpg", "jpeg", "pdf"])
+            
+            enviar = st.form_submit_button("🚀 Enviar para Validação", use_container_width=True)
+    
             if enviar:
-                # Validação de data
+                # --- VALIDAÇÕES ---
                 if data_fim < data_inicio:
-                    st.error("A data final não pode ser anterior à data inicial.")
+                    st.error("❌ A data final não pode ser anterior à inicial.")
                     st.stop()
-
-                # Se for Folga, concatenamos o motivo para salvar no banco
-                motivo_final = f"Folga: {detalhe_folga}" if mot == "Folga" else mot
-
-                with st.spinner("Salvando..."):
-                    # --- LÓGICA DE UPLOAD ---
+                
+                # Validação de anexo obrigatório para casos específicos
+                if motivo_pai == "Atestado" and not anexo_f:
+                    st.error("❌ Para registros de Atestado, o anexo é obrigatório.")
+                    st.stop()
+    
+                # --- PROCESSAMENTO DO MOTIVO FINAL ---
+                if detalhe_especifico:
+                    motivo_final = f"{motivo_pai}: {detalhe_especifico}"
+                else:
+                    motivo_final = motivo_pai
+    
+                with st.spinner("Enviando dados para o sistema..."):
+                    # Lógica de Upload (Mesma que você já usa)
                     link_final_anexo = ""
                     if anexo_f:
                         try:
                             nome_arquivo = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{anexo_f.name}"
-                            caminho_storage = f"atestados/{nome_arquivo}"
+                            caminho_storage = f"comprovantes/{nome_arquivo}"
                             supabase.storage.from_("anexos").upload(
                                 path=caminho_storage, 
                                 file=anexo_f.getvalue(),
                                 file_options={"content-type": anexo_f.type}
                             )
                             link_final_anexo = supabase.storage.from_("anexos").get_public_url(caminho_storage)
-                        except: pass
-
-                    # --- PREPARAÇÃO DOS DADOS ---
+                        except Exception as e:
+                            st.error(f"Erro no upload do arquivo: {e}")
+    
+                    # Montagem do objeto para o banco
                     txt_data = f"{data_inicio} até {data_fim}" if data_inicio != data_fim else str(data_inicio)
-                    txt_h = f"{h1.strftime('%H:%M')} | {h2.strftime('%H:%M')} | {h3.strftime('%H:%M')} | {h4.strftime('%H:%M')}" if h1 else "Período Integral"
-
+                    
                     nova_ocorrencia = {
                         "solicitante": st.session_state.usuario_logado.get('nome'),
                         "email_solicitante": st.session_state.usuario_logado.get('email'),
                         "data": txt_data,
-                        "motivo": motivo_final, # Aqui salva "Folga: BANCO DE HORAS", por exemplo
+                        "motivo": motivo_final,
                         "status": "⏳ Pendente",
                         "detalhes": just,
                         "horarios": txt_h,
                         "arquivado": "Não",
                         "anexo": link_final_anexo
                     }
-
+    
                     try:
                         supabase.table("ocorrencias").insert(nova_ocorrencia).execute()
-                        st.success("✅ Solicitação enviada!")
+                        st.balloons()
+                        st.success("✅ Solicitação enviada com sucesso!")
                         st.session_state.db_ocorrencias = carregar_ocorrencias()
                         st.rerun()
                     except Exception as e:
-                        st.error(f"Erro ao salvar: {e}")
+                        st.error(f"Erro ao salvar no banco: {e}")
 
     # ---------------- HISTÓRICO ----------------
 
@@ -1143,6 +1136,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

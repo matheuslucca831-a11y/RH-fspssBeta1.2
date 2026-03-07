@@ -1032,16 +1032,16 @@ with tab_nova:
         anexo_obrigatorio = False
         
         if motivo_pai == "Atestado":
-            anexo_obrigatorio = True
-        elif categoria == "Folga" and detalhe_especifico == "SERVIÇO ELEITORAL (TRE)":
-            anexo_obrigatorio = True
-        
-        is_obrigatorio = " (Obrigatório)" if anexo_obrigatorio else " (Opcional)"
-        
-        anexo_f = st.file_uploader(
-            f"📤 Anexar Comprovante{is_obrigatorio}",
-            type=["png", "jpg", "jpeg", "pdf"]
-        )
+                anexo_obrigatorio = True
+            elif categoria == "Folga" and detalhe_especifico == "SERVIÇO ELEITORAL (TRE)":
+                anexo_obrigatorio = True
+            
+            is_obrigatorio = " (Obrigatório)" if anexo_obrigatorio else " (Opcional)"
+            
+            anexo_f = st.file_uploader(
+                f"📤 Anexar Comprovante{is_obrigatorio}",
+                type=["png", "jpg", "jpeg", "pdf"]
+            )
 
         # --- PROCESSAMENTO DO ENVIO (Apenas uma vez) ---
         if enviar:
@@ -1163,6 +1163,7 @@ with tab_nova:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

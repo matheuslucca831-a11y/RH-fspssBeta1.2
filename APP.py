@@ -802,28 +802,78 @@ with t_hist:
 
 if user['cargo'] in ["Enfermeiro", "Supervisor"]:
     meus_lids = st.session_state.vinculos.get(email_logado, [])
-
+    
+    # Filtra pendentes para o contador do título da aba
     pendentes = [
-        o for o in st.session_state.db_ocorrencias
-        if o["status"] == "⏳ Pendente"
-        and o["email_solicitante"] in meus_lids
+        o for o in st.session_state.db_ocorrencias 
+        if o["status"] == "⏳ Pendente" and o["email_solicitante"] in meus_lids
     ]
-
     qtd_pend = len(pendentes)
 
-    tab_aprov, tab_nova, tab_hist = st.tabs(
-        
-       [ f"📋 Aprovações ({qtd_pend})",
-        "📝 Nova ocorrência",
+    tab_aprov, tab_nova, tab_hist = st.tabs([
+        f"📋 Aprovações ({qtd_pend})", 
+        "📝 Nova ocorrência", 
         "📜 Histórico"
-        ]
-    )
-
+    ])
 else:
+    tab_nova, tab_hist = st.tabs(["📝 Nova ocorrência", "📜 Histórico"])
+    tab_aprov = None  # Define como None para não dar erro de variável inexistente
 
-    tab_nova, tab_hist = st.tabs(
-        ["📝 Nova ocorrência", "📜 Histórico"]
-    )
+# 2. CONTEÚDO DA ABA DE APROVAÇÕES
+if tab_aprov is not None:
+    with tab_aprov:
+        st.header("📋 Gestão de Equipe")
+        
+        # Usamos a lista 'pendentes' já filtrada acima
+        if pendentes:
+            for oc in pendentes:
+                with st.container(border=True):
+                    c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
+
+                    texto = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
+                    if oc.get('horarios'):
+                        texto += f"\n🕒 {oc['horarios']}"
+                    
+                    c_inf.write(texto)
+
+                    if oc.get("detalhes"):
+                        with c_inf.expander("Ver justificativa"):
+                            st.write(oc["detalhes"])
+
+                    # Botões de Anexo
+                    if oc.get('anexo'):
+                        col_v, col_d = c_inf.columns(2)
+                        col_v.link_button("👁️ Ver", oc["anexo"], use_container_width=True)
+                        
+                        arq_cont = baixar_arquivo(oc["anexo"])
+                        if arq_cont:
+                            col_d.download_button(
+                                label="📁 Baixar",
+                                data=arq_cont,
+                                file_name=oc["anexo"].split("/")[-1],
+                                key=f"dl_{oc['id']}",
+                                use_container_width=True
+                            )
+
+                    # Ações de Aprovação/Negação
+                    if c_ok.button("✅", key=f"ok_{oc['id']}", use_container_width=True, help="Aprovar"):
+                        supabase.table("ocorrencias").update({"status": "✅ Aprovado", "aprovado_por": user['nome']}).eq("id", oc['id']).execute()
+                        st.session_state.db_ocorrencias = carregar_ocorrencias()
+                        st.rerun()
+
+                    if c_no.button("❌", key=f"no_{oc['id']}", use_container_width=True, help="Negar"):
+                        supabase.table("ocorrencias").update({"status": "❌ Negado", "aprovado_por": user['nome']}).eq("id", oc['id']).execute()
+                        st.session_state.db_ocorrencias = carregar_ocorrencias()
+                        st.rerun()
+        else:
+            st.info("Nada pendente por aqui! ✨")
+
+# 3. CONTEÚDO DAS OUTRAS ABAS (Fora do if de cargo)
+with tab_nova:
+    st.write("Conteúdo da Nova Ocorrência...")
+
+with tab_hist:
+    st.write("Conteúdo do Histórico...")
 
 # ---------------- APROVAÇÕES ----------------
 if user['cargo'] in ["Enfermeiro", "Supervisor"]:
@@ -1073,6 +1123,7 @@ if user['cargo'] in ["Enfermeiro", "Supervisor"]:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

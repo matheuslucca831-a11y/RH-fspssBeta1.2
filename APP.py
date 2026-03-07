@@ -631,7 +631,7 @@ if user['cargo'] == "Gestor Máximo":
                             st.caption("Nenhuma justificativa por escrito foi enviada.")
                         
                         # --- EXIBIÇÃO DO ANEXO ---
-                        if f.get('anexo_url'): # Supondo que sua coluna no Supabase se chame 'anexo_url'
+                        if f.get('anexo'): # Supondo que sua coluna no Supabase se chame 'anexo_url'
                             st.write("**Documento Anexado:**")
                             # Verifica se é uma imagem ou PDF (ajuste conforme sua necessidade)
                             url = f['anexo_url']
@@ -1157,6 +1157,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

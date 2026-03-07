@@ -634,7 +634,7 @@ if user['cargo'] == "Gestor Máximo":
                         if f.get('anexo'): # Supondo que sua coluna no Supabase se chame 'anexo_url'
                             st.write("**Documento Anexado:**")
                             # Verifica se é uma imagem ou PDF (ajuste conforme sua necessidade)
-                            url = f['anexo_url']
+                            url = f['anexo']
                             if url.lower().endswith(('.png', '.jpg', '.jpeg')):
                                 st.image(url, caption="Comprovante enviado", use_container_width=True)
                             else:
@@ -1157,6 +1157,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

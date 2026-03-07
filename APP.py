@@ -1058,7 +1058,6 @@ else:
     
                     try:
                         supabase.table("ocorrencias").insert(nova_ocorrencia).execute()
-                        st.balloons()
                         st.success("✅ Solicitação enviada com sucesso!")
                         st.session_state.db_ocorrencias = carregar_ocorrencias()
                         st.rerun()
@@ -1160,6 +1159,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

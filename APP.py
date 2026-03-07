@@ -605,7 +605,7 @@ if user['cargo'] == "Gestor Máximo":
                                     st.rerun()
 
 
-    with t_aprovar
+    with t_aprovar:
     
         st.header("⚖️ Decisões da Direção")
         st.markdown("---")
@@ -660,33 +660,6 @@ if user['cargo'] == "Gestor Máximo":
     with t_hist:
     
             st.subheader("📊 Monitoramento Geral")
-
-            # --- NOVA ÁREA DE DECISÃO PARA O GESTOR ---
-            folgas_pendentes = [o for o in st.session_state.db_ocorrencias if o["status"] == "⏳ Aguardando Direção"]
-            
-            if folgas_pendentes:
-                st.warning(f"Existem {len(folgas_pendentes)} folgas aguardando sua decisão final.")
-                for f in folgas_pendentes:
-                    with st.expander(f"📌 FINALIZAR: Folga de {f['solicitante']}", expanded=True):
-                        st.write(f"**Data:** {f['data']} | **Motivo:** {f['motivo']}")
-                        st.info(f"O Enfermeiro/Supervisor já validou esta solicitação.")
-                        
-                        c_sim, c_nao = st.columns(2)
-                        if c_sim.button("✅ Confirmar Folga", key=f"conf_folga_{f['id']}"):
-                            supabase.table("ocorrencias").update({
-                                "status": "✅ Aprovado",
-                                "aprovado_por": f"{f['aprovado_por']} + Direção"
-                            }).eq("id", f['id']).execute()
-                            st.success("Folga confirmada!")
-                            st.rerun()
-                        
-                        if c_nao.button("❌ Vetar Folga", key=f"vet_folga_{f['id']}"):
-                            supabase.table("ocorrencias").update({
-                                "status": "❌ Negado",
-                                "aprovado_por": f"Vetado pela Direção"
-                            }).eq("id", f['id']).execute()
-                            st.rerun()
-            st.divider()
     
     
     
@@ -1176,6 +1149,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

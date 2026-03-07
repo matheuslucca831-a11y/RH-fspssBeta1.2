@@ -1053,7 +1053,7 @@ else:
 
                                 # Atualiza no Supabase
 
-                                supabase.table("ocorrencias").update({"status": "✅
+                                supabase.table("ocorrencias").update({"status": "✅ Aprovado", "aprovado_por": user['nome']}).eq("id", oc['id']).execute()
 # ---------------- APROVAÇÕES ----------------
 if user['cargo'] in ["Enfermeiro", "Supervisor"]:
 
@@ -1302,6 +1302,7 @@ if user['cargo'] in ["Enfermeiro", "Supervisor"]:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

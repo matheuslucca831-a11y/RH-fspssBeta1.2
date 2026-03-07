@@ -755,31 +755,31 @@ if user['cargo'] == "Gestor Máximo":
                                     # Deixamos apenas o botão de baixar em uma coluna menor se desejar
     
                                     try:
-                                            # 2. Gera a URL pública do arquivo no Supabase
-                                            url_publica = supabase.storage.from_(NOME_BUCKET).get_public_url(o["anexo"])
+                                        # 2. Gera a URL pública do arquivo no Supabase
+                                        url_publica = supabase.storage.from_(NOME_BUCKET).get_public_url(o["anexo"])
+                                        
+                                        # 3. "Imita" a lógica do requests para baixar o conteúdo para a memória
+                                        response = requests.get(url_publica)
+                                        
+                                        if response.status_code == 200:
+                                            conteudo_arquivo = response.content
+                                            # Extrai o nome do arquivo da string do caminho
+                                            nome_original = o["anexo"].split("/")[-1]
                                             
-                                            # 3. "Imita" a lógica do requests para baixar o conteúdo para a memória
-                                            response = requests.get(url_publica)
-                                            
-                                            if response.status_code == 200:
-                                                conteudo_arquivo = response.content
-                                                # Extrai o nome do arquivo da string do caminho
-                                                nome_original = o["anexo"].split("/")[-1]
-                                                
-                                                # 4. Botão de Download do Streamlit
-                                                st.download_button(
-                                                    label="📁 Baixar Arquivo Original",
-                                                    data=conteudo_arquivo,
-                                                    file_name=nome_original,
-                                                    mime="application/octet-stream",
-                                                    key=f"btn_dl_{o['id']}",
-                                                    use_container_width=True
-                                                )
-                                            else:
-                                                st.warning(f"⚠️ Não foi possível acessar o arquivo (Status: {response.status_code})")
+                                            # 4. Botão de Download do Streamlit
+                                            st.download_button(
+                                                label="📁 Baixar Arquivo Original",
+                                                data=conteudo_arquivo,
+                                                file_name=nome_original,
+                                                mime="application/octet-stream",
+                                                key=f"btn_dl_{o['id']}",
+                                                use_container_width=True
+                                            )
+                                        else:
+                                            st.warning(f"⚠️ Não foi possível acessar o arquivo (Status: {response.status_code})")
                                     
-                                        except Exception as e:
-                                            st.error(f"Erro ao processar download: {e}")
+                                    except Exception as e:
+                                        st.error(f"Erro ao processar download: {e}")
                                         
                                 # Botões de Ação (Arquivar e Excluir)
     
@@ -1187,6 +1187,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

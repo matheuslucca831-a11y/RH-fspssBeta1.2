@@ -779,19 +779,17 @@ if user['cargo'] == "Gestor Máximo":
                                 # Botões de Ação (Arquivar e Excluir)
     
                                 if c2.button("📦 Arquivar", key=f"arq_filt_{o['id']}", use_container_width=True):
-    
                                     try:
-    
-                                        # Atualiza a coluna 'arquivado' para 'Sim' no registro com esse ID
-    
+                                        # 1. Atualiza o banco
                                         supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", o['id']).execute()
-    
+                                        
+                                        # 2. Força a recarga total do banco para o estado
                                         st.session_state.db_ocorrencias = carregar_ocorrencias()
-    
+                                        
+                                        # 3. Mensagem de sucesso e reinício
+                                        st.success("Arquivado com sucesso!")
                                         st.rerun()
-    
                                     except Exception as e:
-    
                                         st.error(f"Erro ao arquivar: {e}")
     
     
@@ -1198,6 +1196,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

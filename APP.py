@@ -825,80 +825,83 @@ else:
             ["📝 Nova ocorrência", "📜 Histórico"]
         )
 
-        tab_aprov = None
+# ---------------- APROVAÇÕES ----------------
+if user['cargo'] in ["Enfermeiro", "Supervisor"]:
 
-    # ---------------- APROVAÇÕES ----------------
+    with tab_aprov:
+        st.header("📋 Gestão de Equipe")
+        meus_lids = st.session_state.vinculos.get(email_logado, [])
+        pends = [o for o in st.session_state.db_ocorrencias if o['status'] == "⏳ Pendente" and o['email_solicitante'] in meus_lids]
 
-    if user['cargo'] in ["Enfermeiro", "Supervisor"]:
+        if not pends:
+            st.info("Nenhuma ocorrência pendente para aprovação.")
+        else:
+            for oc in pends:
+                with st.container(border=True):
+                    c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
 
-        with tab_aprov:
-            st.header("📋 Gestão de Equipe")
-            meus_lids = st.session_state.vinculos.get(email_logado, [])
-            pends = [o for o in st.session_state.db_ocorrencias if o['status'] == "⏳ Pendente" and o['email_solicitante'] in meus_lids]
+                    # Montagem do texto informacional
+                    texto = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\n**Motivo:** {oc.get('motivo','')}"
+                    if oc.get('horarios'):
+                        texto += f"\n🕒 {oc['horarios']}"
+                    
+                    c_inf.write(texto)
 
-            if pends:
-                for oc in pends:
-                    with st.container(border=True):
-                        c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
+                    if oc.get("detalhes"):
+                        with c_inf.expander("Ver justificativa"):
+                            st.write(oc["detalhes"])
 
-                        texto = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
-                        if oc.get('horarios'):
-                            texto += f"\n🕒 {oc['horarios']}"
-                        
-                        c_inf.write(texto)
+                    # Visualização e Download do Anexo
+                    if oc.get('anexo'):
+                        with c_inf:
+                            col_view, col_down = st.columns(2)
+                            
+                            # 1. Botão de Visualizar
+                            col_view.link_button("👁️ Visualizar", oc["anexo"], use_container_width=True)
+                
+                            # 2. Botão de Download (Otimizado)
+                            nome_original = oc["anexo"].split("/")[-1].split("?")[0] # Limpa parâmetros de URL se houver
+                            conteudo = obter_conteudo_arquivo(oc["anexo"])
 
-                        if oc.get("detalhes"):
-                            with c_inf.expander("Ver justificativa"):
-                                st.write(oc["detalhes"])
+                            if conteudo:
+                                col_down.download_button(
+                                    label="📁 Baixar Direto",
+                                    data=conteudo,
+                                    file_name=nome_original,
+                                    mime="application/octet-stream",
+                                    key=f"btn_dl_{oc['id']}",
+                                    use_container_width=True
+                                )
+                            else:
+                                col_down.error("Anexo indisponível")
 
-                        # Visualização e Download do Anexo na Aprovação
-                        if oc.get('anexo'):
-                            with c_inf:
-                                col_view, col_down = st.columns(2)
-                                
-                                # 1. Botão de Visualizar (Continua abrindo em nova guia)
-                                col_view.link_button("👁️ Visualizar", oc["anexo"], use_container_width=True)
-                        
-                                # 2. Botão de Download Real (Força o download)
-                                try:
-                                    # Baixa o conteúdo do arquivo da internet para a memória do Python
-                                    conteudo_arquivo = requests.get(oc["anexo"]).content
-                                    
-                                    # Pega o nome original do arquivo pela URL
-                                    nome_original = oc["anexo"].split("/")[-1] 
-                        
-                                    col_down.download_button(
-                                        label="📁 Baixar Direto",
-                                        data=conteudo_arquivo,
-                                        file_name=nome_original,
-                                        mime="application/octet-stream", # Força o navegador a tratar como download
-                                        key=f"btn_dl_{oc['id']}",
-                                        use_container_width=True
-                                    )
-                                except Exception as e:
-                                    col_down.error("Erro ao preparar download")
-
-                        # Lógica de Aprovação/Negação
-                        if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
-                            try:
-                                # Atualiza no Supabase
-                                supabase.table("ocorrencias").update({"status": "✅ Aprovado", "aprovado_por": user['nome']}).eq("id", oc['id']).execute()
-                                st.success("Aprovado!")
-                                st.session_state.db_ocorrencias = carregar_ocorrencias() # Recarrega a lista atualizada
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Erro ao aprovar: {e}")
-                        
-                        if c_no.button("❌ Negar", key=f"apr_no_{oc['id']}", use_container_width=True):
-                            try:
-                                # Atualiza no Supabase
-                                supabase.table("ocorrencias").update({"status": "❌ Negado", "aprovado_por": user['nome']}).eq("id", oc['id']).execute()
-                                st.warning("Negado!")
-                                st.session_state.db_ocorrencias = carregar_ocorrencias() # Recarrega a lista atualizada
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Erro ao negar: {e}")
-
+                    # Lógica de Aprovação
+                    if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
+                        try:
+                            supabase.table("ocorrencias").update({
+                                "status": "✅ Aprovado", 
+                                "aprovado_por": user['nome']
+                            }).eq("id", oc['id']).execute()
+                            
+                            st.toast(f"Ocorrência de {oc['solicitante']} aprovada!")
+                            st.session_state.db_ocorrencias = carregar_ocorrencias()
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao aprovar: {e}")
+                    
+                    # Lógica de Negação
+                    if c_no.button("❌ Negar", key=f"apr_no_{oc['id']}", use_container_width=True):
+                        try:
+                            supabase.table("ocorrencias").update({
+                                "status": "❌ Negado", 
+                                "aprovado_por": user['nome']
+                            }).eq("id", oc['id']).execute()
+                            
+                            st.toast("Ocorrência negada.", icon="❌")
+                            st.session_state.db_ocorrencias = carregar_ocorrencias()
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao negar: {e}")
 
     # ---------------- NOVA OCORRÊNCIA ----------------
 
@@ -1070,6 +1073,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

@@ -85,18 +85,7 @@ if "db_usuarios" not in st.session_state:
     st.session_state.db_usuarios = carregar_usuarios()
 
 
-# verifica se o usuário 0001 já existe no banco
-usuario_existe = supabase.table("usuarios").select("*").eq("email", "0001").execute()
-
-if len(usuario_existe.data) == 0:
-    usuario_padrao = {
-        "email": "0001@rh.fspss",
-        "nome": "Administrador",
-        "cargo": "Gestor Máximo",
-        "matricula": gerar_hash("admin123")
-    }
-
-    supabase.table("usuarios").insert(usuario_padrao).execute()
+print(gerar_hash("suasenha"))
 
 # recarrega usuários
 st.session_state.db_usuarios = carregar_usuarios()
@@ -1124,6 +1113,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

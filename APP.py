@@ -930,79 +930,69 @@ else:
 
     # ---------------- TAB NOVA OCORRÊNCIA (Apenas adicionei o motivo 'Folga') ----------------
     with tab_nova:
-        st.header("📝 Minhas Ocorrências de Ponto")
-        mot = st.selectbox("Motivo", ["Esquecimento", "Atestado", "Folga", "Erro no Relógio", "Outro"])
-        
-        with st.form("f_ponto", clear_on_submit=True):
+            st.header("📝 Minhas Ocorrências de Ponto")
+            
+            # O selectbox fica fora do form para que a tela atualize 
+            # e esconda os horários se for "Atestado" ou "Folga"
+            mot = st.selectbox("Motivo", ["Esquecimento", "Atestado", "Folga", "Erro no Relógio", "Outro"])
+            
+            # AQUI COMEÇA O FORMULÁRIO (Apenas um!)
+            with st.form("f_ponto_unico", clear_on_submit=True):
+                col_a, col_b = st.columns(2)
+                data_inicio = col_a.date_input("Data inicial")
+                data_fim = col_b.date_input("Data final")
     
-                with st.form("f_ponto", clear_on_submit=True):
-                    col_a, col_b = st.columns(2)
-                    data_inicio = col_a.date_input("Data inicial")
-                    data_fim = col_b.date_input("Data final")
+                # Lógica de exibição de horários: Atestado e Folga não precisam de horas
+                if mot not in ["Atestado", "Folga"]:
+                    st.write("Preencha os horários")
+                    h_cols = st.columns(4)
+                    h1 = h_cols[0].time_input("Entrada", value=time(0,0), step=60)
+                    h2 = h_cols[1].time_input("S. Almoço", value=time(0,0), step=60)
+                    h3 = h_cols[2].time_input("R. Almoço", value=time(0,0), step=60)
+                    h4 = h_cols[3].time_input("Saída", value=time(0,0), step=60)
+                else:
+                    h1 = h2 = h3 = h4 = None
+                    st.info(f"{mot} não precisa de preenchimento de horários.")
     
-                    if mot != "Atestado":
-                        st.write("Preencha os horários")
-                        h_cols = st.columns(4)
-                        h1 = h_cols[0].time_input("Entrada", value=time(0,0), step=60)
-                        h2 = h_cols[1].time_input("S. Almoço", value=time(0,0), step=60)
-                        h3 = h_cols[2].time_input("R. Almoço", value=time(0,0), step=60)
-                        h4 = h_cols[3].time_input("Saída", value=time(0,0), step=60)
+                just = st.text_area("Justificativa detalhada:")
+                anexo_f = st.file_uploader("Comprovante", type=["png", "jpg", "jpeg", "pdf"])
+                
+                # Botão de envio dentro do formulário
+                enviar = st.form_submit_button("Enviar Solicitação", use_container_width=True)
+    
+                if enviar:
+                    # 1. Validações básicas
+                    if data_fim < data_inicio:
+                        st.error("Data final menor que inicial")
+                    elif mot == "Atestado" and not anexo_f:
+                        st.error("Para atestados, o comprovante é obrigatório.")
                     else:
-                        h1 = h2 = h3 = h4 = None
-                        st.info("Atestado não precisa de horário")
-    
-                    just = st.text_area("Justificativa detalhada:")
-                    anexo_f = st.file_uploader("Comprovante", type=["png", "jpg", "jpeg", "pdf"])
-    
-                    enviar = st.form_submit_button("Enviar Solicitação", use_container_width=True)
-                  
-                 
-
-
-
-                    if enviar:
-                        # 1. Validações básicas
-                        if data_fim < data_inicio:
-                            st.error("Data final menor que inicial")
-                            st.stop()
-                        
-                        if mot == "Atestado" and not anexo_f:
-                            st.error("Para atestados, o comprovante é obrigatório.")
-                            st.stop()
-        
                         with st.spinner("Processando..."):
                             # --- LÓGICA DO ANEXO ---
-                            link_final_anexo = "" # Inicializa vazio para evitar NameError
-                            
+                            link_final_anexo = ""
                             if anexo_f:
                                 try:
-                                    # Define o nome e o caminho dentro do IF
                                     nome_arquivo = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{anexo_f.name}"
                                     caminho_storage = f"atestados/{nome_arquivo}"
                                     
-                                    # Faz o upload para o bucket 'anexos'
                                     supabase.storage.from_("anexos").upload(
                                         path=caminho_storage, 
                                         file=anexo_f.getvalue(),
                                         file_options={"content-type": anexo_f.type}
                                     )
-                                    
-                                    # Agora que caminho_storage existe, gera a URL
                                     link_final_anexo = supabase.storage.from_("anexos").get_public_url(caminho_storage)
                                 except Exception as e:
                                     st.error(f"Erro no upload do arquivo: {e}")
                                     st.stop()
-        
-                            # --- PREPARAÇÃO DOS DADOS PARA O BANCO ---
-                            txt_data = f"{data_inicio} até {data_fim}" if mot == "Atestado" else str(data_inicio)
+    
+                            # --- PREPARAÇÃO DOS DADOS ---
+                            txt_data = f"{data_inicio} até {data_fim}" if mot in ["Atestado", "Folga"] else str(data_inicio)
                             
-                            # Formata horários ou define como integral
                             if h1 is not None:
                                 txt_h = f"{h1.strftime('%H:%M')} | {h2.strftime('%H:%M')} | {h3.strftime('%H:%M')} | {h4.strftime('%H:%M')}"
                             else:
-                                txt_h = "Atestado / Integral"
-        
-                            # Montagem do dicionário (Verifique se é 'email_solicitante' ou 'email_solicita')
+                                txt_h = f"{mot} / Integral"
+    
                             nova_ocorrencia = {
                                 "solicitante": str(st.session_state.usuario_logado.get('nome')),
                                 "email_solicitante": str(st.session_state.usuario_logado.get('email')),
@@ -1014,20 +1004,16 @@ else:
                                 "arquivado": "Não",
                                 "anexo": str(link_final_anexo) 
                             }
-        
-                            # --- EXECUÇÃO DO SALVAMENTO ---
+    
+                            # --- SALVAMENTO ---
                             try:
                                 response = supabase.table("ocorrencias").insert(nova_ocorrencia).execute()
-                                
                                 if response.data:
                                     st.success("✅ Solicitação salva com sucesso!")
-                                    # Atualiza a memória local para o histórico aparecer na hora
                                     st.session_state.db_ocorrencias = carregar_ocorrencias() 
                                     st.rerun()
-                                else:
-                                    st.error("Erro: O banco não retornou confirmação.")
                             except Exception as e:
-                                st.error(f"❌ Erro ao salvar no Supabase: {e}")
+                                st.error(f"❌ Erro ao salvar: {e}")
 
     # ---------------- HISTÓRICO ----------------
 
@@ -1094,6 +1080,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

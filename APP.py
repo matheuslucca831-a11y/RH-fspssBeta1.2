@@ -617,179 +617,113 @@ if user['cargo'] == "Gestor Máximo":
 
 
     
-        with t_hist:
-            st.subheader("📊 Monitoramento Geral")
-        
-            if st.session_state.db_ocorrencias:
-                df_oc = pd.DataFrame(st.session_state.db_ocorrencias)
-        
-                with st.container(border=True):
-                    f1, f2, f3, f4 = st.columns(4)
-        
-                    with f1:
-                        f_nome = st.text_input("👤 Nome", placeholder="Buscar...")
-                    with f2:
-                        opcoes_status = ["Todos"] + sorted(list(df_oc["status"].unique()))
-                        f_status = st.selectbox("📌 Status", opcoes_status)
-                    with f3:
-                        # --- ADIÇÃO DAS OPÇÕES AGRUPADAS ---
-                        opcoes_motivo = [
-                            "Todos", 
-                            "🎯 Todas as Folgas", 
-                            "⏰ Todas as Ocorrências" # <-- Nova opção
-                        ] + sorted(list(df_oc["motivo"].unique()))
-                        
-                        if f_motivo == "🎯 Todas as Folgas":
-                            # Filtra tudo que CONTÉM a palavra "Folga"
-                            mask &= df_oc["motivo"].str.contains("Folga", case=False, na=False)
-                        
-                        elif f_motivo == "⏰ Todas as Ocorrências":
-                            # Filtra tudo que NÃO CONTÉM a palavra "Folga" 
-                            # (Ou seja, sobra apenas as ocorrências de ponto)
-                            mask &= ~df_oc["motivo"].str.contains("Folga", case=False, na=False)
-                        
-                        elif f_motivo != "Todos":
-                            # Filtro normal para uma opção específica selecionada
-                            mask &= df_oc["motivo"] == f_motivo
-                    with f4:
-                        f_data_sel = st.date_input("📅 Data", value=None, format="DD/MM/YYYY")
-        
-                # --- LÓGICA DE FILTRAGEM ATUALIZADA ---
-                mask = df_oc["arquivado"] != "Sim"
-        
-                if f_nome:
-                    mask &= df_oc["solicitante"].str.contains(f_nome, case=False, na=False)
+    with t_hist:
+                st.subheader("📊 Monitoramento Geral")
                 
-                if f_status != "Todos":
-                    mask &= df_oc["status"] == f_status
-        
-                if f_motivo == "🎯 Todas as Folgas":
-                    # Filtra qualquer motivo que contenha a palavra "Folga" (ignora maiúsculas/minúsculas)
-                    mask &= df_oc["motivo"].str.contains("Folga", case=False, na=False)
-                elif f_motivo != "Todos":
-                    mask &= df_oc["motivo"] == f_motivo
-        
-                if f_data_sel:
-                    data_str = f_data_sel.strftime("%Y-%m-%d")
-                    mask &= df_oc["data"].astype(str).str.contains(data_str, na=False)
-        
-                df_filtrado = df_oc[mask]
-
-
+                # --- 1. INICIALIZAÇÃO (Evita o NameError) ---
+                f_nome = ""
+                f_status = "Todos"
+                f_motivo = "Todos"
+                f_data_sel = None
     
+                if st.session_state.db_ocorrencias:
+                    df_oc = pd.DataFrame(st.session_state.db_ocorrencias)
+                    
+                    # --- 2. INTERFACE DE FILTROS ---
+                    with st.container(border=True):
+                        f1, f2, f3, f4 = st.columns(4)
+                        
+                        with f1:
+                            f_nome = st.text_input("👤 Nome", placeholder="Buscar...")
+                        with f2:
+                            opcoes_status = ["Todos"] + sorted(list(df_oc["status"].unique()))
+                            f_status = st.selectbox("📌 Status", opcoes_status)
+                        with f3:
+                            opcoes_motivo = [
+                                "Todos", 
+                                "🎯 Todas as Folgas", 
+                                "⏰ Todas as Ocorrências"
+                            ] + sorted(list(df_oc["motivo"].unique()))
+                            f_motivo = st.selectbox("💡 Motivo", opcoes_motivo)
+                        with f4:
+                            f_data_sel = st.date_input("📅 Data", value=None, format="DD/MM/YYYY")
     
-                    # 4. EXIBIÇÃO DOS CARDS FILTRADOS (Substitua daqui para baixo)
+                    # --- 3. LÓGICA DE FILTRAGEM (Ajustada para os novos grupos) ---
+                    mask = df_oc["arquivado"] != "Sim"
     
-                if df_filtrado.empty:
+                    if f_nome:
+                        mask &= df_oc["solicitante"].str.contains(f_nome, case=False, na=False)
     
-                        st.info("Nenhum registro encontrado.")
+                    if f_status != "Todos":
+                        mask &= df_oc["status"] == f_status
     
-                else:
+                    # Lógica para os botões agrupados
+                    if f_motivo == "🎯 Todas as Folgas":
+                        mask &= df_oc["motivo"].str.contains("Folga", case=False, na=False)
+                    elif f_motivo == "⏰ Todas as Ocorrências":
+                        # Pega tudo que NÃO tem "Folga" no nome
+                        mask &= ~df_oc["motivo"].str.contains("Folga", case=False, na=False)
+                    elif f_motivo != "Todos":
+                        mask &= df_oc["motivo"] == f_motivo
     
+                    if f_data_sel:
+                        data_str = f_data_sel.strftime("%Y-%m-%d")
+                        mask &= df_oc["data"].astype(str).str.contains(data_str, na=False)
+    
+                    df_filtrado = df_oc[mask]
+    
+                    # --- 4. EXIBIÇÃO DOS CARDS ---
+                    if df_filtrado.empty:
+                        st.info("Nenhum registro encontrado para os filtros selecionados.")
+                    else:
+                        # Mostra a quantidade encontrada (Dica de ADS para o gestor)
+                        st.caption(f"🔢 {len(df_filtrado)} registros encontrados")
+                        
                         for _, o in df_filtrado.iterrows():
-    
                             with st.container(border=True):
-    
                                 c1, c2 = st.columns([0.8, 0.2])
-    
                                 
-    
-                                # Montagem do texto principal
-    
-                                # Usamos a nossa função cor_status para colorir o status
-    
                                 resumo = (
-    
                                     f"👤 **{o['solicitante']}**\n\n"
-    
                                     f"📅 {o['data']} | 💡 Motivo: {o['motivo']}\n"
-    
                                     f"📌 Status: :{cor_status(o['status'])}[**{o['status']}**]"
-    
                                 )
     
-                                
-    
-                                # --- ADICIONA O APROVADOR AQUI ---
-    
                                 if "aprovado_por" in o and pd.notna(o["aprovado_por"]) and o["aprovado_por"] != "":
-    
                                     resumo += f"\n\n✅ **Analisado por:** {o['aprovado_por']}"
     
-                                
-    
                                 if o.get("horarios"):
-    
                                     resumo += f"\n🕒 {o['horarios']}"
-    
-                                
     
                                 c1.markdown(resumo)
     
-    
-    
-                                # Justificativa
-    
                                 if o.get("detalhes"):
-    
                                     with c1.expander("Ver justificativa"):
-    
                                         st.write(o["detalhes"])
     
-    
-    
-                                # --- DENTRO DO SEU LOOP DE OCORRÊNCIAS ---
-    
                                 if o.get("anexo"):
-    
-                                    st.divider() # Uma linha divisória
-    
-                                    
-    
-                                    # Em vez de colunas pequenas, usamos um expander que ocupa a largura toda
-    
-                                    with st.expander("🖼️ Visualizar Documento (Atestado/Comprovante)", expanded=False):
-    
+                                    with st.expander("🖼️ Visualizar Documento", expanded=False):
                                         exibir_anexo(o["anexo"])
     
-                                # Botões de Ação (Arquivar e Excluir)
-    
+                                # Botões de Ação
                                 if c2.button("📦 Arquivar", key=f"arq_filt_{o['id']}", use_container_width=True):
                                     try:
-                                        # 1. Atualiza o banco
                                         supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", o['id']).execute()
-                                        
-                                        # 2. Força a recarga total do banco para o estado
                                         st.session_state.db_ocorrencias = carregar_ocorrencias()
-                                        
-                                        # 3. Mensagem de sucesso e reinício
-                                        st.success("Arquivado com sucesso!")
+                                        st.success("Arquivado!")
                                         st.rerun()
                                     except Exception as e:
-                                        st.error(f"Erro ao arquivar: {e}")
-    
-    
+                                        st.error(f"Erro: {e}")
     
                                 if c2.button("🗑️ Excluir", key=f"exc_adm_{o['id']}", use_container_width=True):
-    
                                     try:
-    
-                                        # Remove fisicamente do banco de dados
-    
                                         supabase.table("ocorrencias").delete().eq("id", o['id']).execute()
-    
                                         st.session_state.db_ocorrencias = carregar_ocorrencias()
-    
                                         st.rerun()
-    
                                     except Exception as e:
-    
-                                        st.error(f"Erro ao excluir: {e}")
-    
-            else:
-    
-                st.info("Sem registros no banco de dados.")
-    
+                                        st.error(f"Erro: {e}")
+                else:
+                    st.info("Sem registros no banco de dados.")
 
 
     with t_arq:
@@ -1175,6 +1109,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

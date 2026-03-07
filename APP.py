@@ -843,9 +843,9 @@ if user['cargo'] == "Gestor Máximo":
 # --------------------------------------------------
 # 6. VISÃO OPERACIONAL (ENFERMEIRO, SUPERVISOR, FUNCIONÁRIO)
 # --------------------------------------------------
-
 else:
     # --- LÓGICA DE FILTRAGEM DE PENDÊNCIAS ---
+    email_logado = st.session_state.usuario_logado.get('email')
     meus_lids = st.session_state.vinculos.get(email_logado, [])
     
     if user['cargo'] in ["Enfermeiro", "Supervisor"]:
@@ -861,14 +861,17 @@ else:
         
     elif user['cargo'] == "Gestor Máximo":
         # Diretor vê especificamente o que aguarda a direção
+        # Removi o recuo excessivo que estava aqui
         pendentes = [
-                o for o in st.session_state.db_ocorrencias 
-                if o["status"] == "⏳ Aguardando Direção"
-            ]
-            tab_aprov, tab_nova, tab_hist = st.tabs([
-                f"🏛️ Decisão Final ({len(pendentes)})", "📝 Nova ocorrência", "📜 Histórico"
-            ])
+            o for o in st.session_state.db_ocorrencias 
+            if o["status"] == "⏳ Aguardando Direção"
+        ]
+        tab_aprov, tab_nova, tab_hist = st.tabs([
+            f"🏛️ Decisão Final ({len(pendentes)})", "📝 Nova ocorrência", "📜 Histórico"
+        ])
+        
     else:
+        # Funcionário comum
         tab_nova, tab_hist = st.tabs(["📝 Nova ocorrência", "📜 Histórico"])
         tab_aprov = None
 
@@ -1088,6 +1091,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

@@ -503,8 +503,8 @@ if user['cargo'] == "Gestor Máximo":
                             except Exception as e:
                                 # Só entra aqui se o comando acima FALHAR
                                 st.error(f"Erro ao criar: {e}")
-                        else:
-                            st.warning("Digite um nome para a unidade.")
+                    else:
+                        st.warning("Digite um nome para a unidade.")
     
         # Carrega unidades do banco
         res_unidades = supabase.table("unidades").select("*").execute()
@@ -1160,6 +1160,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

@@ -632,9 +632,25 @@ if user['cargo'] == "Gestor Máximo":
                         opcoes_status = ["Todos"] + sorted(list(df_oc["status"].unique()))
                         f_status = st.selectbox("📌 Status", opcoes_status)
                     with f3:
-                        # --- ADIÇÃO DA OPÇÃO AGRUPADA ---
-                        opcoes_motivo = ["Todos", "🎯 Todas as Folgas"] + sorted(list(df_oc["motivo"].unique()))
-                        f_motivo = st.selectbox("💡 Motivo", opcoes_motivo)
+                        # --- ADIÇÃO DAS OPÇÕES AGRUPADAS ---
+                        opcoes_motivo = [
+                            "Todos", 
+                            "🎯 Todas as Folgas", 
+                            "⏰ Todas as Ocorrências" # <-- Nova opção
+                        ] + sorted(list(df_oc["motivo"].unique()))
+                        
+                        if f_motivo == "🎯 Todas as Folgas":
+                            # Filtra tudo que CONTÉM a palavra "Folga"
+                            mask &= df_oc["motivo"].str.contains("Folga", case=False, na=False)
+                        
+                        elif f_motivo == "⏰ Todas as Ocorrências":
+                            # Filtra tudo que NÃO CONTÉM a palavra "Folga" 
+                            # (Ou seja, sobra apenas as ocorrências de ponto)
+                            mask &= ~df_oc["motivo"].str.contains("Folga", case=False, na=False)
+                        
+                        elif f_motivo != "Todos":
+                            # Filtro normal para uma opção específica selecionada
+                            mask &= df_oc["motivo"] == f_motivo
                     with f4:
                         f_data_sel = st.date_input("📅 Data", value=None, format="DD/MM/YYYY")
         
@@ -655,7 +671,7 @@ if user['cargo'] == "Gestor Máximo":
         
                 if f_data_sel:
                     data_str = f_data_sel.strftime("%Y-%m-%d")
-                    mask &= df_oc["data"].str.contains(data_str, na=False)
+                    mask &= df_oc["data"].astype(str).str.contains(data_str, na=False)
         
                 df_filtrado = df_oc[mask]
 
@@ -1159,6 +1175,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

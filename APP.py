@@ -369,7 +369,7 @@ st.title(f"Olá, {user['nome']}!")
 # --------------------------------------------------
 if user['cargo'] == "Gestor Máximo":
     st.header("Painel Administrativo Central")
-    t_users, t_vinc, t_aprovar, t_hist, t_arquivo = st.tabs([
+    t_users, t_vinc, t_aprovar, t_hist, t_arq = st.tabs([
         "👥 Equipe", 
         "🔗 Vínculos", 
         "✅ Aprovar Folgas", # Nova aba dedicada
@@ -1149,6 +1149,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

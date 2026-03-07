@@ -489,11 +489,22 @@ if user['cargo'] == "Gestor Máximo":
                 nova_unidade = st.text_input("Nome da Unidade (ex: USF Boiçucanga, Administrativo):")
                 if st.form_submit_button("Cadastrar Unidade"):
                     if nova_unidade:
-                        try:
-                            supabase.table("unidades").insert({"nome": nova_unidade}).execute()
-                            st.success("Unidade criada!")
-                            st.rerun()
-                        except: st.error("Erro ao criar.")
+                            try:
+                                # 1. Tenta inserir no banco
+                                supabase.table("unidades").insert({"nome": nova_unidade}).execute()
+                                
+                                # 2. Se chegou aqui, deu certo! Mostra o sucesso.
+                                st.success("Unidade criada!")
+                                
+                                # 3. IMPORTANTE: Limpa o cache e recarrega a página 
+                                # Isso faz as mensagens "fantasmas" sumirem
+                                st.rerun() 
+                                
+                            except Exception as e:
+                                # Só entra aqui se o comando acima FALHAR
+                                st.error(f"Erro ao criar: {e}")
+                        else:
+                            st.warning("Digite um nome para a unidade.")
     
         # Carrega unidades do banco
         res_unidades = supabase.table("unidades").select("*").execute()
@@ -1149,6 +1160,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

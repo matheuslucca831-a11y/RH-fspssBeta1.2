@@ -593,288 +593,467 @@ if user['cargo'] == "Gestor Máximo":
                                     st.rerun()
 
 with t_hist:
+
         st.subheader("📊 Monitoramento Geral")
 
-        # 1. CONVERSÃO PARA DATAFRAME
+
+
+        # 1. CONVERSÃO PARA DATAFRAME (Para que os filtros funcionem)
+
         if st.session_state.db_ocorrencias:
+
             df_oc = pd.DataFrame(st.session_state.db_ocorrencias)
+
             
-            # Garantir que a coluna 'arquivado' existe e tratar valores nulos
-            if "arquivado" not in df_oc.columns:
-                df_oc["arquivado"] = "Não"
-            df_oc["arquivado"] = df_oc["arquivado"].fillna("Não")
 
             # 2. ÁREA DE FILTROS (CALENDÁRIO + SELECTS)
+
             with st.container(border=True):
+
                 f1, f2, f3, f4 = st.columns(4)
+
                 
+
                 with f1:
-                    f_nome = st.text_input("👤 Nome", placeholder="Buscar...", key="filt_monit_nome")
+
+                    f_nome = st.text_input("👤 Nome", placeholder="Buscar...")
+
                 with f2:
+
                     opcoes_status = ["Todos"] + sorted(list(df_oc["status"].unique()))
-                    f_status = st.selectbox("📌 Status", opcoes_status, key="filt_monit_status")
+
+                    f_status = st.selectbox("📌 Status", opcoes_status)
+
                 with f3:
+
                     opcoes_motivo = ["Todos"] + sorted(list(df_oc["motivo"].unique()))
-                    f_motivo = st.selectbox("💡 Motivo", opcoes_motivo, key="filt_monit_motivo")
+
+                    f_motivo = st.selectbox("💡 Motivo", opcoes_motivo)
+
                 with f4:
-                    f_data_sel = st.date_input("📅 Data", value=None, format="DD/MM/YYYY", key="filt_monit_data")
+
+                    # Calendário para o filtro de data
+
+                    f_data_sel = st.date_input("📅 Data", value=None, format="DD/MM/YYYY")
+
+
 
             # 3. LÓGICA DE FILTRAGEM (Máscara)
-            # Filtro essencial: Só exibe o que NÃO está arquivado
-            mask = (df_oc["arquivado"] != "Sim") & (df_oc["arquivado"] != "sim")
+
+            mask = df_oc["arquivado"] != "Sim"
+
             
+
             if f_nome:
+
                 mask &= df_oc["solicitante"].str.contains(f_nome, case=False, na=False)
+
             if f_status != "Todos":
+
                 mask &= df_oc["status"] == f_status
+
             if f_motivo != "Todos":
+
                 mask &= df_oc["motivo"] == f_motivo
+
             if f_data_sel:
+
+                # Transforma a data do calendário para o texto do CSV (AAAA-MM-DD)
+
                 data_str = f_data_sel.strftime("%Y-%m-%d")
+
                 mask &= df_oc["data"].str.contains(data_str, na=False)
-            
+
+
+
             df_filtrado = df_oc[mask]
 
-            # 4. EXIBIÇÃO DOS CARDS FILTRADOS
+
+
+            df_filtrado = df_oc[mask]
+
+
+
+                # 4. EXIBIÇÃO DOS CARDS FILTRADOS (Substitua daqui para baixo)
+
             if df_filtrado.empty:
-                st.info("Nenhum registro pendente encontrado.")
+
+                    st.info("Nenhum registro encontrado.")
+
             else:
-                for _, o in df_filtrado.iterrows():
-                    with st.container(border=True):
-                        c1, c2 = st.columns([0.8, 0.2])
-                        
-                        # Montagem do resumo
-                        resumo = (
-                            f"👤 **{o['solicitante']}**\n\n"
-                            f"📅 {o['data']} | 💡 Motivo: {o['motivo']}\n"
-                            f"📌 Status: :{cor_status(o['status'])}[**{o['status']}**]"
-                        )
-                        
-                        if "aprovado_por" in o and pd.notna(o["aprovado_por"]) and o["aprovado_por"] != "":
-                            resumo += f"\n\n✅ **Analisado por:** {o['aprovado_por']}"
-                        
-                        if o.get("horarios"):
-                            resumo += f"\n🕒 {o['horarios']}"
-                        
-                        c1.markdown(resumo)
 
-                        # Justificativa
-                        if o.get("detalhes"):
-                            with c1.expander("Ver justificativa"):
-                                st.write(o["detalhes"])
+                    for _, o in df_filtrado.iterrows():
 
-                        # Bloco de Anexo
-                        if o.get("anexo"):
-                            st.divider()
-                            col_ver, col_baixar = st.columns(2)
+                        with st.container(border=True):
+
+                            c1, c2 = st.columns([0.8, 0.2])
+
                             
-                            with col_ver:
-                                # Função para abrir em nova aba
-                                exibir_anexo(o["anexo"])
-                            
-                            with col_baixar:
-                                try:
-                                    conteudo_bin = requests.get(o["anexo"]).content
-                                    nome_arq = o["anexo"].split("/")[-1]
-                                    st.download_button(
-                                        label="📥 Baixar Arquivo",
-                                        data=conteudo_bin,
-                                        file_name=nome_arq,
-                                        key=f"dl_monit_{o['id']}",
-                                        use_container_width=True
-                                    )
-                                except:
-                                    st.error("Erro no download")
 
-                        # Botão de Arquivar (na coluna lateral c2)
-                        if c2.button("📦 Arquivar", key=f"btn_arq_{o['id']}", use_container_width=True):
-                            try:
-                                # Atualiza no Supabase
-                                supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", o['id']).execute()
-                                # Recarrega dados e atualiza tela
-                                st.session_state.db_ocorrencias = carregar_ocorrencias()
-                                st.success("Arquivado!")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Erro: {e}")
+                            # Montagem do texto principal
 
-# --- GARANTIR QUE TODOS OS REGISTROS TENHAM 'arquivado' ---
-        # Isso limpa os dados na memória antes de criar o DataFrame
-        for item in st.session_state.db_ocorrencias:
-            if "arquivado" not in item or item["arquivado"] is None or item["arquivado"] == "":
-                item["arquivado"] = "Não"
+                            # Usamos a nossa função cor_status para colorir o status
 
-        # --- CRIAR DATAFRAME ---
-        df_oc = pd.DataFrame(st.session_state.db_ocorrencias)
-        
-        # --- FILTRO APENAS ARQUIVADOS ---
-        # Aceita 'Sim' ou 'sim' para evitar erros de digitação no banco
-        df_arq = df_oc[(df_oc["arquivado"] == "Sim") | (df_oc["arquivado"] == "sim")]
+                            resumo = (
 
-        if df_arq.empty:
-            st.info("O Arquivo Morto está vazio.")
-        else:
-            # --- ÁREA DE FILTROS DO ARQUIVO ---
-            with st.container(border=True):
-                f1, f2, f3, f4 = st.columns(4)
-                with f1:
-                    f_nome = st.text_input("👤 Nome", placeholder="Buscar...", key="arq_filt_nome")
-                with f2:
-                    op_status = ["Todos"] + sorted(df_arq["status"].unique().tolist())
-                    f_status = st.selectbox("📌 Status", op_status, key="arq_filt_status")
-                with f3:
-                    op_motivo = ["Todos"] + sorted(df_arq["motivo"].unique().tolist())
-                    f_motivo = st.selectbox("💡 Motivo", op_motivo, key="arq_filt_motivo")
-                with f4:
-                    f_data = st.date_input("📅 Data", value=None, format="DD/MM/YYYY", key="arq_filt_data")
+                                f"👤 **{o['solicitante']}**\n\n"
 
-            # --- APLICAR MÁSCARA DE FILTRO ---
-            mask = df_arq["arquivado"].isin(["Sim", "sim"])
-            
-            if f_nome:
-                mask &= df_arq["solicitante"].str.contains(f_nome, case=False, na=False)
-            if f_status != "Todos":
-                mask &= df_arq["status"] == f_status
-            if f_motivo != "Todos":
-                mask &= df_arq["motivo"] == f_motivo
-            if f_data:
-                data_str = f_data.strftime("%Y-%m-%d")
-                mask &= df_arq["data"].str.contains(data_str, na=False)
+                                f"📅 {o['data']} | 💡 Motivo: {o['motivo']}\n"
 
-            df_filtrado = df_arq[mask]
+                                f"📌 Status: :{cor_status(o['status'])}[**{o['status']}**]"
 
-            # --- EXIBIÇÃO DOS REGISTROS ---
-            if df_filtrado.empty:
-                st.warning("Nenhum registro encontrado com esses filtros.")
-            else:
-                for _, o in df_filtrado.iterrows():
-                    with st.container(border=True):
-                        col_text, col_btn = st.columns([0.8, 0.2])
-                        
-                        with col_text:
-                            st.markdown(f"**{o['solicitante']}** - Status: :{cor_status(o['status'])}[**{o['status']}**]")
-                            st.write(f"Motivo: {o['motivo']} | Data: {o['data']}")
-
-                            if o.get("detalhes"):
-                                with st.expander("Ver justificativa"):
-                                    st.write(o["detalhes"])
-
-                        # Bloco de Anexo
-                        if o.get("anexo"):
-                            st.divider()
-                            c_ver, c_baixar = st.columns(2)
-                            with c_ver:
-                                exibir_anexo(o["anexo"])
-                            with c_baixar:
-                                try:
-                                    conteudo_bin = requests.get(o["anexo"]).content
-                                    nome_arq = o["anexo"].split("/")[-1]
-                                    st.download_button(
-                                        label="📥 Baixar",
-                                        data=conteudo_bin,
-                                        file_name=nome_arq,
-                                        key=f"dl_arq_aba_{o['id']}", # Key única para esta aba
-                                        use_container_width=True
-                                    )
-                                except:
-                                    st.error("Erro no arquivo")
-
-                        # Botão para Reativar (Mover de volta para o monitoramento)
-                        if col_btn.button("📤 Reativar", key=f"re_btn_{o['id']}", use_container_width=True):
-                            try:
-                                supabase.table("ocorrencias").update({"arquivado": "Não"}).eq("id", o['id']).execute()
-                                st.session_state.db_ocorrencias = carregar_ocorrencias() 
-                                st.success("Reativado!")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Erro: {e}")
-
-# --------------------------------------------------
-# 6. VISÃO OPERACIONAL (ENFERMEIRO, SUPERVISOR, FUNCIONÁRIO)
-# --------------------------------------------------
-# --------------------------------------------------
-# 6. VISÃO OPERACIONAL (ENFERMEIRO, SUPERVISOR, FUNCIONÁRIO)
-# --------------------------------------------------
-# --------------------------------------------------
-# 6. VISÃO OPERACIONAL (ENFERMEIRO, SUPERVISOR, FUNCIONÁRIO)
-# --------------------------------------------------
-
-
-if user['cargo'] in ["Enfermeiro", "Supervisor"]:
-    meus_lids = st.session_state.vinculos.get(email_logado, [])
-    
-    # Filtra pendentes para o contador do título da aba
-    pendentes = [
-        o for o in st.session_state.db_ocorrencias 
-        if o["status"] == "⏳ Pendente" and o["email_solicitante"] in meus_lids
-    ]
-    qtd_pend = len(pendentes)
-
-    tab_aprov, tab_nova, tab_hist = st.tabs([
-        f"📋 Aprovações ({qtd_pend})", 
-        "📝 Nova ocorrência", 
-        "📜 Histórico"
-    ])
-else:
-    tab_nova, tab_hist = st.tabs(["📝 Nova ocorrência", "📜 Histórico"])
-    tab_aprov = None  # Define como None para não dar erro de variável inexistente
-
-# 2. CONTEÚDO DA ABA DE APROVAÇÕES
-if tab_aprov is not None:
-    with tab_aprov:
-        st.header("📋 Gestão de Equipe")
-        
-        # Usamos a lista 'pendentes' já filtrada acima
-        if pendentes:
-            for oc in pendentes:
-                with st.container(border=True):
-                    c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
-
-                    texto = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
-                    if oc.get('horarios'):
-                        texto += f"\n🕒 {oc['horarios']}"
-                    
-                    c_inf.write(texto)
-
-                    if oc.get("detalhes"):
-                        with c_inf.expander("Ver justificativa"):
-                            st.write(oc["detalhes"])
-
-                    # Botões de Anexo
-                    if oc.get('anexo'):
-                        col_v, col_d = c_inf.columns(2)
-                        col_v.link_button("👁️ Ver", oc["anexo"], use_container_width=True)
-                        
-                        arq_cont = baixar_arquivo(oc["anexo"])
-                        if arq_cont:
-                            col_d.download_button(
-                                label="📁 Baixar",
-                                data=arq_cont,
-                                file_name=oc["anexo"].split("/")[-1],
-                                key=f"dl_{oc['id']}",
-                                use_container_width=True
                             )
 
-                    # Ações de Aprovação/Negação
-                    if c_ok.button("✅", key=f"ok_{oc['id']}", use_container_width=True, help="Aprovar"):
-                        supabase.table("ocorrencias").update({"status": "✅ Aprovado", "aprovado_por": user['nome']}).eq("id", oc['id']).execute()
-                        st.session_state.db_ocorrencias = carregar_ocorrencias()
-                        st.rerun()
+                            
 
-                    if c_no.button("❌", key=f"no_{oc['id']}", use_container_width=True, help="Negar"):
-                        supabase.table("ocorrencias").update({"status": "❌ Negado", "aprovado_por": user['nome']}).eq("id", oc['id']).execute()
-                        st.session_state.db_ocorrencias = carregar_ocorrencias()
-                        st.rerun()
+                            # --- ADICIONA O APROVADOR AQUI ---
+
+                            if "aprovado_por" in o and pd.notna(o["aprovado_por"]) and o["aprovado_por"] != "":
+
+                                resumo += f"\n\n✅ **Analisado por:** {o['aprovado_por']}"
+
+                            
+
+                            if o.get("horarios"):
+
+                                resumo += f"\n🕒 {o['horarios']}"
+
+                            
+
+                            c1.markdown(resumo)
+
+
+
+                            # Justificativa
+
+                            if o.get("detalhes"):
+
+                                with c1.expander("Ver justificativa"):
+
+                                    st.write(o["detalhes"])
+
+
+
+                            # --- DENTRO DO SEU LOOP DE OCORRÊNCIAS ---
+
+                            if o.get("anexo"):
+
+                                st.divider() # Uma linha divisória
+
+                                
+
+                                # Em vez de colunas pequenas, usamos um expander que ocupa a largura toda
+
+                                with st.expander("🖼️ Visualizar Documento (Atestado/Comprovante)", expanded=False):
+
+                                    exibir_anexo(o["anexo"])
+
+                                
+
+                                # Deixamos apenas o botão de baixar em uma coluna menor se desejar
+
+                                try:
+
+                                    with open(o["anexo"], "rb") as f:
+
+                                        st.download_button(
+
+                                            label="📁 Baixar Arquivo Original",
+
+                                            data=f,
+
+                                            file_name=os.path.basename(o["anexo"]),
+
+                                            key=f"dl_full_{o['id']}",
+
+                                            use_container_width=True
+
+                                        )
+
+                                except:
+
+                                    st.error("Erro ao carregar arquivo para download.")
+
+                            # Botões de Ação (Arquivar e Excluir)
+
+                            if c2.button("📦 Arquivar", key=f"arq_filt_{o['id']}", use_container_width=True):
+
+                                try:
+
+                                    # Atualiza a coluna 'arquivado' para 'Sim' no registro com esse ID
+
+                                    supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", o['id']).execute()
+
+                                    st.session_state.db_ocorrencias = carregar_ocorrencias()
+
+                                    st.rerun()
+
+                                except Exception as e:
+
+                                    st.error(f"Erro ao arquivar: {e}")
+
+
+
+                            if c2.button("🗑️ Excluir", key=f"exc_adm_{o['id']}", use_container_width=True):
+
+                                try:
+
+                                    # Remove fisicamente do banco de dados
+
+                                    supabase.table("ocorrencias").delete().eq("id", o['id']).execute()
+
+                                    st.session_state.db_ocorrencias = carregar_ocorrencias()
+
+                                    st.rerun()
+
+                                except Exception as e:
+
+                                    st.error(f"Erro ao excluir: {e}")
+
         else:
-            st.info("Nada pendente por aqui! ✨")
 
-# 3. CONTEÚDO DAS OUTRAS ABAS (Fora do if de cargo)
-with tab_nova:
-    st.write("Conteúdo da Nova Ocorrência...")
+            st.info("Sem registros no banco de dados.")
 
-with tab_hist:
-    st.write("Conteúdo do Histórico...")
 
+
+    with t_arq:
+
+        st.subheader("📦 Arquivo Morto - Ocorrências Arquivadas")
+
+
+
+        # --- GARANTIR QUE TODOS OS REGISTROS TENHAM 'arquivado' ---
+
+        for item in st.session_state.db_ocorrencias:
+
+            if "arquivado" not in item or item["arquivado"] == "":
+
+                item["arquivado"] = "Não"
+
+
+
+        # --- CRIAR DATAFRAME ---
+
+        df_oc = pd.DataFrame(st.session_state.db_ocorrencias)
+
+        if "arquivado" not in df_oc.columns:
+
+            df_oc["arquivado"] = "Não"
+
+
+
+        # --- FILTRO APENAS ARQUIVADOS ---
+
+        df_arq = df_oc[df_oc["arquivado"] == "Sim"]
+
+
+
+        if not df_arq.empty:
+
+            # --- FILTROS ---
+
+            f1, f2, f3, f4 = st.columns(4)
+
+            with f1:
+
+                f_nome = st.text_input("👤 Nome", placeholder="Buscar...", key="arq_nome")
+
+            with f2:
+
+                op_status = ["Todos"] + sorted(df_arq["status"].unique())
+
+                f_status = st.selectbox("📌 Status", op_status, key="arq_status")
+
+            with f3:
+
+                op_motivo = ["Todos"] + sorted(df_arq["motivo"].unique())
+
+                f_motivo = st.selectbox("💡 Motivo", op_motivo, key="arq_motivo")
+
+            with f4:
+
+                f_data = st.date_input("📅 Data", value=None, format="DD/MM/YYYY", key="arq_data")
+
+# --------------------------------------------------
+# 6. VISÃO OPERACIONAL (ENFERMEIRO, SUPERVISOR, FUNCIONÁRIO)
+# --------------------------------------------------
+# --------------------------------------------------
+# 6. VISÃO OPERACIONAL (ENFERMEIRO, SUPERVISOR, FUNCIONÁRIO)
+# --------------------------------------------------
+# --------------------------------------------------
+# 6. VISÃO OPERACIONAL (ENFERMEIRO, SUPERVISOR, FUNCIONÁRIO)
+# --------------------------------------------------
+
+
+else:
+
+
+
+    if user['cargo'] in ["Enfermeiro", "Supervisor"]:
+
+        meus_lids = st.session_state.vinculos.get(email_logado, [])
+
+
+
+        pendentes = [
+
+            o for o in st.session_state.db_ocorrencias
+
+            if o["status"] == "⏳ Pendente"
+
+            and o["email_solicitante"] in meus_lids
+
+        ]
+
+
+
+        qtd_pend = len(pendentes)
+
+
+
+        tab_aprov, tab_nova, tab_hist = st.tabs(
+
+            
+
+           [ f"📋 Aprovações ({qtd_pend})",
+
+            "📝 Nova ocorrência",
+
+            "📜 Histórico"
+
+            ]
+
+        )
+
+
+
+    else:
+
+
+
+        tab_nova, tab_hist = st.tabs(
+
+            ["📝 Nova ocorrência", "📜 Histórico"]
+
+        )
+
+
+
+        tab_aprov = None
+
+
+
+    # ---------------- APROVAÇÕES ----------------
+
+
+
+    if user['cargo'] in ["Enfermeiro", "Supervisor"]:
+
+
+
+        with tab_aprov:
+
+            st.header("📋 Gestão de Equipe")
+
+            meus_lids = st.session_state.vinculos.get(email_logado, [])
+
+            pends = [o for o in st.session_state.db_ocorrencias if o['status'] == "⏳ Pendente" and o['email_solicitante'] in meus_lids]
+
+
+
+            if pends:
+
+                for oc in pends:
+
+                    with st.container(border=True):
+
+                        c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
+
+
+
+                        texto = f"**{oc['solicitante']}**\n\n📅 {oc.get('data','')}\nMotivo: {oc.get('motivo','')}"
+
+                        if oc.get('horarios'):
+
+                            texto += f"\n🕒 {oc['horarios']}"
+
+                        
+
+                        c_inf.write(texto)
+
+
+
+                        if oc.get("detalhes"):
+
+                            with c_inf.expander("Ver justificativa"):
+
+                                st.write(oc["detalhes"])
+
+
+
+                        # Visualização e Download do Anexo na Aprovação
+
+                        if oc.get('anexo'):
+
+                            with c_inf:
+
+                                col_view, col_down = st.columns(2)
+
+                                
+
+                                # 1. Botão de Visualizar (Continua abrindo em nova guia)
+
+                                col_view.link_button("👁️ Visualizar", oc["anexo"], use_container_width=True)
+
+                        
+
+                                # 2. Botão de Download Real (Força o download)
+
+                                try:
+
+                                    # Baixa o conteúdo do arquivo da internet para a memória do Python
+
+                                    conteudo_arquivo = requests.get(oc["anexo"]).content
+
+                                    
+
+                                    # Pega o nome original do arquivo pela URL
+
+                                    nome_original = oc["anexo"].split("/")[-1] 
+
+                        
+
+                                    col_down.download_button(
+
+                                        label="📁 Baixar Direto",
+
+                                        data=conteudo_arquivo,
+
+                                        file_name=nome_original,
+
+                                        mime="application/octet-stream", # Força o navegador a tratar como download
+
+                                        key=f"btn_dl_{oc['id']}",
+
+                                        use_container_width=True
+
+                                    )
+
+                                except Exception as e:
+
+                                    col_down.error("Erro ao preparar download")
+
+
+
+                        # Lógica de Aprovação/Negação
+
+                        if c_ok.button("✅ Aprovar", key=f"apr_ok_{oc['id']}", use_container_width=True):
+
+                            try:
+
+                                # Atualiza no Supabase
+
+                                supabase.table("ocorrencias").update({"status": "✅
 # ---------------- APROVAÇÕES ----------------
 if user['cargo'] in ["Enfermeiro", "Supervisor"]:
 

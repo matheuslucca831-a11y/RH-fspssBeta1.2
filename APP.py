@@ -986,49 +986,63 @@ else:
                                 st.error(f"Erro: {e}")
 
 # ---------------- TAB NOVA OCORRÊNCIA ----------------
-    with tab_nova:
-        st.header("📝 Nova Solicitação de Ocorrência")
-        
-        # 1. Defina o motivo FORA do formulário para ele ser o "gatilho" da mudança
-        motivo_pai = st.selectbox("O que você deseja registrar?", 
-                                 ["Esquecimento", "Atestado", "Folga", "Erro no Relógio", "Outros"])
-        
-        # Detalhes específicos (também fora ou dentro, mas a variável deve existir)
+with tab_nova:
+    st.header("📝 Nova Solicitação")
+    
+    # 1. Primeiro nível de escolha: Categoria
+    categoria = st.radio("Selecione a categoria:", ["Ocorrência de Ponto", "Folga"], horizontal=True)
+    
+    # 2. Segundo nível: Motivo baseado na categoria
+    if categoria == "Ocorrência de Ponto":
+        motivo_pai = st.selectbox("Tipo de Ocorrência:", 
+                                 ["Esquecimento", "Atestado", "Erro no Relógio", "Outros"])
+        # Sub-opções específicas para Atestado
         detalhe_especifico = ""
-        if motivo_pai == "Folga":
-            detalhe_especifico = st.selectbox("Tipo de Folga:", ["BANCO DE HORAS", "FOLGA ABONADA", "TRE", "OUTROS"])
-        elif motivo_pai == "Atestado":
-            detalhe_especifico = st.selectbox("Tipo de Atestado:", ["Médico", "Acompanhante", "Comparecimento"])
-    
-        # 2. Inicie o Formulário
-        with st.form("f_ponto_unico", clear_on_submit=True):
-            col_a, col_b = st.columns(2)
-            data_inicio = col_a.date_input("Data inicial")
-            data_fim = col_b.date_input("Data final")
-    
-            # AQUI ESTAVA O ERRO: A lógica precisa estar bem indentada dentro do FORM
-            if motivo_pai in ["Esquecimento", "Erro no Relógio", "Outros"]:
-                st.write("---")
-                st.write("📌 **Preencha os horários:**")
-                h_cols = st.columns(4)
-                h1 = h_cols[0].time_input("Entrada", value=time(0,0), key="h1")
-                h2 = h_cols[1].time_input("S. Almoço", value=time(0,0), key="h2")
-                h3 = h_cols[2].time_input("R. Almoço", value=time(0,0), key="h3")
-                h4 = h_cols[3].time_input("Saída", value=time(0,0), key="h4")
-                txt_h = f"{h1.strftime('%H:%M')} | {h2.strftime('%H:%M')} | {h3.strftime('%H:%M')} | {h4.strftime('%H:%M')}"
-            else:
-                txt_h = "Período Integral"
-    
+        if motivo_pai == "Atestado":
+            detalhe_especifico = st.selectbox("Tipo de Atestado:", 
+                                             ["Médico", "Acompanhante", "Comparecimento", "Doação de Sangue"])
+    else:
+        motivo_pai = "Folga"
+        detalhe_especifico = st.selectbox("Folga referente a:", [
+            "BANCO DE HORAS", "FOLGA ABONADA (Art. 56, XII)", "SERVIÇO ELEITORAL (TRE)",
+            "CAMPANHA DE VACINAÇÃO", "ABONO NATALÍCIO (Art. 56, X)", "OUTROS"
+        ])
+
+    with st.form("f_ponto_unico", clear_on_submit=True):
+        col_a, col_b = st.columns(2)
+        data_inicio = col_a.date_input("Data inicial")
+        data_fim = col_b.date_input("Data final")
+
+        # 3. Lógica de Horários (Apenas para Ocorrências que não sejam Atestado)
+        if categoria == "Ocorrência de Ponto" and motivo_pai != "Atestado":
             st.write("---")
-            just = st.text_area("Justificativa / Observações:")
-            anexo_f = st.file_uploader("📤 Anexar Comprovante", type=["png", "jpg", "jpeg", "pdf"])
-            
-            # O BOTÃO PRECISA ESTAR AQUI DENTRO DO 'WITH ST.FORM'
-            enviar = st.form_submit_button("🚀 Enviar Solicitação", use_container_width=True)
-    
-            if enviar:
-                # Lógica de salvamento no Supabase (como fizemos antes)...
-                st.success("Enviado!")
+            st.write("📌 **Informe os horários para ajuste:**")
+            h_cols = st.columns(4)
+            h1 = h_cols[0].time_input("Entrada", value=time(0,0))
+            h2 = h_cols[1].time_input("S. Almoço", value=time(0,0))
+            h3 = h_cols[2].time_input("R. Almoço", value=time(0,0))
+            h4 = h_cols[3].time_input("Saída", value=time(0,0))
+            txt_h = f"{h1.strftime('%H:%M')} | {h2.strftime('%H:%M')} | {h3.strftime('%H:%M')} | {h4.strftime('%H:%M')}"
+        else:
+            txt_h = "Período Integral"
+
+        st.write("---")
+        just = st.text_area("Justificativa / Observações:")
+        
+        # OBRIGATORIEDADE DE ANEXO: Definimos um aviso visual
+        is_obrigatorio = " (Obrigatório)" if motivo_pai in ["Atestado", "Folga"] else " (Opcional)"
+        anexo_f = st.file_uploader(f"📤 Anexar Comprovante{is_obrigatorio}", type=["png", "jpg", "jpeg", "pdf"])
+        
+        enviar = st.form_submit_button("🚀 Enviar Solicitação", use_container_width=True)
+
+        if enviar:
+            # --- VALIDAÇÕES ---
+            if (motivo_pai == "Atestado" or categoria == "Folga") and not anexo_f:
+                st.error("❌ O anexo é obrigatório para este tipo de solicitação.")
+                st.stop()
+
+            # Montagem do motivo para o banco
+            motivo_final = f"{motivo_pai}: {detalhe_especifico}" if detalhe_especifico else motivo_pai
     # ---------------- HISTÓRICO ----------------
 
     with tab_hist:
@@ -1094,6 +1108,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

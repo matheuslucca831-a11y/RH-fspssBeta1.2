@@ -750,32 +750,6 @@ if user['cargo'] == "Gestor Máximo":
     
                                         exibir_anexo(o["anexo"])
     
-                                    
-                                        NOME_DO_BUCKET = "anexos"
-                                    # Deixamos apenas o botão de baixar em uma coluna menor se desejar
-                                        try:
-                                        
-                                                response = requests.get(o["anexo"])
-                                        
-                                                if response.status_code == 200:
-                                        
-                                                    conteudo_arquivo = response.content
-                                                    nome_exibicao = o["anexo"].split("/")[-1]
-                                        
-                                                    col_d.download_button(
-                                                        label="📁 Baixar Arquivo",
-                                                        data=conteudo_arquivo,
-                                                        file_name=nome_exibicao,
-                                                        mime="application/octet-stream",
-                                                        key=f"dl_user_{o['id']}",
-                                                        use_container_width=True
-                                                    )
-                                        
-                                                else:
-                                                    col_d.error(f"Erro ao acessar arquivo ({response.status_code})")
-                                    
-                                    except Exception as e:
-                                        col_d.error("Erro ao processar download")
                                 # Botões de Ação (Arquivar e Excluir)
     
                                 if c2.button("📦 Arquivar", key=f"arq_filt_{o['id']}", use_container_width=True):
@@ -1182,6 +1156,7 @@ else:
         else:
 
             st.info("Você ainda não possui ocorrências registradas.")
+
 
 
 

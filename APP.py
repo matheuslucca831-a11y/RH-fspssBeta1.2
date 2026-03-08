@@ -109,9 +109,11 @@ def verificar_senha(senha_digitada, hash_salvo):
     
 # conexão com Supabase
 SUPABASE_URL = "https://zedgyvekirmsqvstqvjt.supabase.co"
-SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZGd5dmVraXJtc3F2c3Rxdmp0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjY3ODQ3OCwiZXhwIjoyMDg4MjU0NDc4fQ.sAtQhOTjjB1OhSxT6IRG3CNr1FDAdP8Tm_zqcAeo8pI"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZGd5dmVraXJtc3F2c3Rxdmp0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjY3ODQ3OCwiZXhwIjoyMDg4MjU0NDc4fQ.sAtQhOTjjB1OhSxT6IRG3CNr1FDAdP8Tm_zqcAeo8pI"
 
-supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+supabase_admin = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # RESTAURA LOGIN DO SUPABASE
 if "supabase_session" in st.session_state:
@@ -612,7 +614,7 @@ if user['cargo'] == "Gestor Máximo":
                 
                         # 3. SINCRONIZA O LOGIN (O pulo do gato)
                         # Como o ID pode vir errado da tabela, buscamos o ID real no Auth pelo e-mail
-                        user_list = supabase.auth.admin.list_users()
+                        user_list = supabase_admin.auth.admin.list_users()
                         # Procura o usuário no sistema de segurança que tem o e-mail antigo
                         target_auth_user = next((user for user in user_list.users if user.email == email_referencia), None)
                 
@@ -622,8 +624,8 @@ if user['cargo'] == "Gestor Máximo":
                                 auth_updates["password"] = str(edit_senha)
                             
                             # Atualiza o motor de login usando o UUID verdadeiro
-                            supabase.auth.admin.update_user_by_id(target_auth_user.id, attributes=auth_updates)
-                            st.success("✅ Login e Dados sincronizados!")
+                            supabase_admin.auth.admin.update_user_by_id(target_auth_user.id, attributes=auth_updates)
+                            st.success("✅ Login e Cadastro sincronizados via Admin!")
                         else:
                             st.warning("⚠️ Dados salvos, mas usuário não encontrado no sistema de Login.")
                 
@@ -1454,6 +1456,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

@@ -539,7 +539,7 @@ if user['cargo'] == "Gestor Máximo":
                     else:
                         email_interno = f"{n_e}@rh12.com"
                         try:
-                            # CRIA USUÁRIO COM CLIENT ADMIN
+                            # Aqui criamos o usuário via Admin API usando a Service Role Key
                             user_auth = supabase.auth.admin.create_user({
                                 "email": email_interno,
                                 "password": n_m,
@@ -1462,6 +1462,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

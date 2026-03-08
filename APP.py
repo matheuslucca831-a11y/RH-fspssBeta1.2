@@ -558,7 +558,6 @@ if user['cargo'] == "Gestor Máximo":
             st.markdown("### 🔗 Alocar Funcionários em Unidade")
     
             # Campo de pesquisa + seleção em um só selectbox
-            pesquisa_unidade = st.text_input("Pesquise ou selecione a Unidade:", key="pesquisa_unidade_aloc")
             unidades_filtradas = [u for u in unidades_db if pesquisa_unidade.lower() in u['nome'].lower()]
             nomes_filtrados = [u['nome'] for u in unidades_filtradas]
             unidade_nome_sel = st.selectbox("Unidade destino:", [""] + nomes_filtrados)
@@ -1205,6 +1204,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

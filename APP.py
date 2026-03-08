@@ -308,15 +308,22 @@ if "autenticado" not in st.session_state:
     st.session_state.usuario_logado = None
 
 # --- Checa se existe login válido no arquivo ---
+# tenta carregar login salvo
 email_temp = carregar_login()
+
 if email_temp:
-    # busca o usuário pelo email no banco
+    # busca usuário na memória
     user = next((u for u in st.session_state.db_usuarios if u["email"] == email_temp), None)
+
     if user:
         st.session_state.autenticado = True
         st.session_state.usuario_logado = user
 
-if not st.session_state.autenticado:
+
+# --------------------------------------------------
+# TELA DE LOGIN
+# --------------------------------------------------
+if not st.session_state.get("autenticado", False):
 
     _, col_login, _ = st.columns([1, 1.5, 1])
 
@@ -329,107 +336,97 @@ if not st.session_state.autenticado:
             st.subheader("Acesso ao Sistema")
 
             e_in = st.text_input("Matrícula")
-
-            s_in = st.text_input("(Senha)", type="password")
+            s_in = st.text_input("Senha", type="password")
 
             if st.button("Entrar", use_container_width=True):
 
                 email_login = f"{str(e_in).strip().lower()}@rh12.com"
-
                 senha_login = s_in
 
-            
-
                 try:
-
                     # 1️⃣ Login no Supabase Auth
-
                     auth_resposta = supabase.auth.sign_in_with_password({
-
                         "email": email_login,
-
                         "password": senha_login
-
                     })
 
-            
-
-                    # 2️⃣ Verifica se autenticou
-
+                    # 2️⃣ Verifica autenticação
                     if auth_resposta.user:
 
-            
-
                         # salva sessão do supabase
-
                         st.session_state.supabase_session = auth_resposta.session
-
-            
 
                         user_id = auth_resposta.user.id
 
-            
-
                         # 3️⃣ Busca usuário na tabela usuarios
-
-                        usuario_res = supabase.table("usuarios").select("*").eq("email", email_login).execute()
-
-            
+                        usuario_res = supabase.table("usuarios") \
+                            .select("*") \
+                            .eq("email", email_login) \
+                            .execute()
 
                         if usuario_res.data:
 
                             usuario = usuario_res.data[0]
 
-            
-
-                            # salva no session_state
-
+                            # salva sessão
                             st.session_state.usuario_logado = usuario
-
                             st.session_state.autenticado = True
-
                             st.session_state.login_time = datetime.now()
-
-            
 
                             salvar_login(email_login)
 
-            
-
                             st.success(f"✅ Bem-vindo, {usuario['nome']}!")
-
                             st.rerun()
 
-            
-
                         else:
-# Trava de segurança: Se não autenticou, para o script aqui e não executa o resto
-if not st.session_state.get("autenticado", False) or st.session_state.usuario_logado is None:
+                            st.error("Usuário não encontrado na tabela.")
+
+                    else:
+                        st.error("Email ou senha inválidos.")
+
+                except Exception as e:
+                    st.error(f"Erro no login: {e}")
+
+
+# --------------------------------------------------
+# TRAVA DE SEGURANÇA
+# --------------------------------------------------
+if not st.session_state.get("autenticado", False) or st.session_state.get("usuario_logado") is None:
     st.stop()
 
-# Só chega aqui se o usuário existir e estiver logado
+
+# --------------------------------------------------
+# USUÁRIO LOGADO
+# --------------------------------------------------
 user = st.session_state.usuario_logado
 email_logado = user['email']
 
+
+# --------------------------------------------------
+# LOGOUT
+# --------------------------------------------------
 if st.sidebar.button("🚪 Sair", key="logout_btn"):
-    # 1. Limpa o estado da memória
+
+    # limpa sessão
     st.session_state.autenticado = False
     st.session_state.usuario_logado = None
-    
-    # 2. Deleta o arquivo de login temporário (ESSENCIAL)
-    apagar_login() 
-    
-    # 3. Limpa os cookies (se estiver usando a biblioteca de cookies)
+
+    # remove login salvo
+    apagar_login()
+
+    # limpa cookies (se existir)
     if 'cookies' in locals():
         cookies["usuario"] = ""
         cookies["login_time"] = ""
         cookies.save()
-    
-    # 4. Reinicia o app limpo
+
     st.rerun()
 
-st.title(f"Olá, {user['nome']}!")
 
+# --------------------------------------------------
+# TELA PRINCIPAL
+# --------------------------------------------------
+st.title(f"Olá, {user['nome']}!")
 
 # --------------------------------------------------
 # 5. PAINEL GESTOR MÁXIMO (ADMIN COMPLETO)
@@ -1239,6 +1236,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

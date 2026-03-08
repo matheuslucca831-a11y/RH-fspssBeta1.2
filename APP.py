@@ -979,6 +979,11 @@ else:
                 for oc in pendentes:
                     with st.container(border=True):
                         c_inf, c_ok, c_no = st.columns([0.6, 0.2, 0.2])
+
+                        # 🚫 impede aprovar própria solicitação
+                        if oc["email_solicitante"] == email_logado:
+                            c_inf.warning("⚠️ Você não pode aprovar sua própria solicitação.")
+                            continue
                         
                         # --- ONDE VOCÊ MUDA (LOGICA DE BUSCA DA UNIDADE) ---
                         unidade_func = next((u.get('unidade', 'Sem Unidade') 
@@ -1262,6 +1267,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

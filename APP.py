@@ -389,7 +389,18 @@ if not st.session_state.get("autenticado", False):
                         st.error("Email ou senha inválidos.")
 
                 except Exception as e:
-                    st.error(f"Erro no login: {e}")
+                    # Transformamos o erro técnico em uma mensagem amigável
+                    erro_msg = str(e)
+                    
+                    if "Invalid login credentials" in erro_msg:
+                        st.error("❌ Matrícula ou senha incorretos. Tente novamente.")
+                    elif "network" in erro_msg.lower():
+                        st.error("🌐 Erro de conexão. Verifique sua internet.")
+                    else:
+                        # Para qualquer outro erro, mostramos algo genérico sem expor o código
+                        st.error("⚠️ Não foi possível acessar o sistema no momento.")
+                    
+                    # Opcional: print(f"DEBUG: {erro_msg}") # Isso só
 
 
 # --------------------------------------------------
@@ -1251,6 +1262,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

@@ -320,55 +320,58 @@ if email_temp:
 if not st.session_state.autenticado:
     _, col_login, _ = st.columns([1, 1.5, 1])
     with col_login:
-        st.write("# 🔐 RH Digital - FSPSS")
+        # Título com estilo
+        st.markdown("<h1 style='text-align: center;'>🔐 RH Digital</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: gray;'>Fundação de Saúde - FSPSS</p>", unsafe_allow_html=True)
+        
         with st.container(border=True):
             st.subheader("Acesso ao Sistema")
-            e_in = st.text_input("Matrícula")
-            s_in = st.text_input("(Senha)", type="password")
-            if st.button("Entrar", use_container_width=True):
-                email_login = f"{str(e_in).strip().lower()}@rh12.com"
-                senha_login = s_in
+            e_in = st.text_input("Matrícula", placeholder="Digite sua matrícula...")
+            s_in = st.text_input("Senha", type="password", placeholder="••••••••")
             
-                try:
-                    # 1️⃣ Login no Supabase Auth
-                    auth_resposta = supabase.auth.sign_in_with_password({
-                        "email": email_login,
-                        "password": senha_login
-                    })
-            
-                    # 2️⃣ Verifica se autenticou
-                    if auth_resposta.user:
-            
-                        # salva sessão do supabase
-                        st.session_state.supabase_session = auth_resposta.session
-            
-                        user_id = auth_resposta.user.id
-            
-                        # 3️⃣ Busca usuário na tabela usuarios
-                        usuario_res = supabase.table("usuarios").select("*").eq("email", email_login).execute()
-            
-                        if usuario_res.data:
-                            usuario = usuario_res.data[0]
-            
-                            # salva no session_state
-                            st.session_state.usuario_logado = usuario
-                            st.session_state.autenticado = True
-                            st.session_state.login_time = datetime.now()
-            
-                            salvar_login(email_login)
-            
-                            st.success(f"✅ Bem-vindo, {usuario['nome']}!")
-                            st.rerun()
-            
-                        else:
-                            st.error("❌ Usuário autenticado mas não encontrado na tabela usuarios.")
-            
-                    else:
-                        st.error("❌ E-mail ou senha inválidos.")
-            
-                except Exception as e:
-                    st.error("❌ Falha na conexão ou dados incorretos.")
-                    st.write(e)
+            if st.button("🚀 Entrar", use_container_width=True):
+                # Limpeza simples dos dados de entrada
+                matricula = str(e_in).strip().lower()
+                if not matricula or not s_in:
+                    st.warning("⚠️ Por favor, preencha todos os campos.")
+                else:
+                    email_login = f"{matricula}@rh12.com"
+                    
+                    try:
+                        # 1️⃣ Login no Supabase Auth
+                        auth_resposta = supabase.auth.sign_in_with_password({
+                            "email": email_login,
+                            "password": s_in
+                        })
+        
+                        if auth_resposta.user:
+                            # 2️⃣ Busca usuário na tabela usuarios
+                            usuario_res = supabase.table("usuarios").select("*").eq("email", email_login).execute()
+        
+                            if usuario_res.data:
+                                usuario = usuario_res.data[0]
+                                
+                                # Salva sessão e dados
+                                st.session_state.supabase_session = auth_resposta.session
+                                st.session_state.usuario_logado = usuario
+                                st.session_state.autenticado = True
+                                st.session_state.login_time = datetime.now()
+        
+                                salvar_login(email_login)
+        
+                                st.success(f"✅ Bem-vindo, {usuario['nome']}!")
+                                time.sleep(0.5) # Pequena pausa para o usuário ver o sucesso
+                                st.rerun()
+                            else:
+                                st.error("❌ Usuário não cadastrado na base de dados do RH.")
+                        
+                    except Exception as e:
+                        # 3️⃣ TRATAMENTO SILENCIOSO: 
+                        # Aqui não usamos st.write(e). Apenas uma mensagem amigável.
+                        # Erros comuns: senha errada ou falta de internet.
+                        st.error("❌ Matrícula ou senha incorretos.")
+                        # Se quiser ver o erro no terminal (sem o usuário ver):
+                        print(f"Erro de Login: {e}")
                                 # st.write(e) # Use apenas para debug se precisar
 # Trava de segurança: Se não autenticou, para o script aqui e não executa o resto
 if not st.session_state.get("autenticado", False) or st.session_state.usuario_logado is None:
@@ -1206,6 +1209,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

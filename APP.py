@@ -302,33 +302,31 @@ if not st.session_state.autenticado:
                 try:
             
                     email_login = f"{str(e_in).strip().lower()}@rh12.com"
-                  # buscar usuário
-                    busca = supabase.table("usuarios").select("*").execute()
-                    st.write("Todos usuários:", busca.data)
-
-                    st.write("Email gerado:", email_login)
-                    st.write("Resultado banco:", busca.data)     
-                    
-                    if not busca.data:
-                        st.error("❌ Matrícula não encontrada.")
-                        st.stop()
             
-                    usuario = busca.data[0]
-            
-                    # autenticar no supabase
+                    # 1️⃣ Autentica no Supabase Auth
                     resposta = supabase.auth.sign_in_with_password({
                         "email": email_login,
                         "password": s_in
                     })
             
-                    st.session_state.autenticado = True
-                    st.session_state.usuario_logado = usuario
+                    # 2️⃣ Busca usuário correto na tabela
+                    usuario_res = supabase.table("usuarios").select("*").eq("email", email_login).execute()
+                    if not usuario_res.data:
+                        st.error("❌ Usuário não encontrado na tabela interna.")
+                        st.stop()
             
-                    st.success("Login realizado com sucesso!")
+                    usuario = usuario_res.data[0]
+            
+                    # 3️⃣ Atualiza session_state
+                    st.session_state.usuario_logado = usuario
+                    st.session_state.autenticado = True
+            
+                    st.success(f"Login realizado! Bem-vindo, {usuario['nome']}")
                     st.rerun()
             
                 except Exception as e:
                     st.error("❌ Matrícula ou senha incorreta.")
+                    st.write(e)
 
 # Trava de segurança: Se não autenticou, para o script aqui e não executa o resto
 if not st.session_state.get("autenticado", False) or st.session_state.usuario_logado is None:
@@ -1122,6 +1120,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

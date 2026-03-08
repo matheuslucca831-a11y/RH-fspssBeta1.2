@@ -12,26 +12,21 @@ import streamlit as st
 from supabase import create_client
 from passlib.hash import pbkdf2_sha256
 
-
-# Carrega todos os usuários
-usuarios = supabase.table("usuarios").select("*").execute().data
-
-for u in usuarios:
-    # Se o usuário já tiver id_auth, pula
-    if "id_auth" in u and u["id_auth"]:
-        continue
-
-    # Tenta buscar o usuário pelo email no Auth
-    try:
-        auth_user = supabase.auth.admin.get_user_by_email(u["email"])
-        if auth_user and "id" in auth_user:
-            # Atualiza a tabela 'usuarios' com o id_auth
-            supabase.table("usuarios").update({"id_auth": auth_user["id"]}).eq("email", u["email"]).execute()
-            print(f"✅ Usuário {u['nome']} sincronizado com Auth.")
-        else:
-            print(f"⚠️ Usuário {u['nome']} não encontrado no Auth.")
-    except Exception as e:
-        print(f"❌ Erro ao sincronizar {u['nome']}: {e}")
+with st.expander("🔧 Sincronizar usuários com Auth (antigos)"):
+    if st.button("🔄 Sincronizar agora"):
+        try:
+            usuarios = supabase.table("usuarios").select("*").execute().data
+            for u in usuarios:
+                if "id_auth" in u and u["id_auth"]:
+                    continue
+                auth_user = supabase.auth.admin.get_user_by_email(u["email"])
+                if auth_user and "id" in auth_user:
+                    supabase.table("usuarios").update({"id_auth": auth_user["id"]}).eq("email", u["email"]).execute()
+                    st.success(f"✅ {u['nome']} sincronizado!")
+                else:
+                    st.warning(f"⚠️ {u['nome']} não encontrado no Auth")
+        except Exception as e:
+            st.error(f"Erro: {e}")
 
 def remover_funcionario_da_unidade(email_func):
     lider_email = st.session_state.usuario_logado['email']
@@ -1465,6 +1460,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

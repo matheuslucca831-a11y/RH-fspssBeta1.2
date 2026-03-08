@@ -12,6 +12,14 @@ import streamlit as st
 from supabase import create_client
 from passlib.hash import pbkdf2_sha256
 
+
+# RESTAURA LOGIN DO SUPABASE
+if "supabase_session" in st.session_state:
+    supabase.auth.set_session(
+        st.session_state.supabase_session["access_token"],
+        st.session_state.supabase_session["refresh_token"]
+    )
+    
 def gerar_hash(senha):
     return pbkdf2_sha256.hash(senha)
     
@@ -310,6 +318,22 @@ if not st.session_state.autenticado:
             
                                 # Verifica se o login no Auth funcionou
                                 if auth_resposta.user:
+
+                                        st.session_state.supabase_session = auth_resposta.session
+
+                                        user_id = auth_resposta.user.id
+                                    
+                                        usuario_res = supabase.table("usuarios").select("*").eq("id", user_id).execute()
+                                    
+                                        if usuario_res.data:
+                                            usuario = usuario_res.data[0]
+                                    
+                                            st.session_state.usuario_logado = usuario
+                                            st.session_state.autenticado = True
+                                            st.session_state.login_time = datetime.now()
+                                    
+                                            st.success(f"✅ Bem-vindo, {usuario['nome']}!")
+                                            st.rerun()
                                     # 2️⃣ Busca o perfil na sua tabela 'usuarios'
                                     # Como acabamos de logar, o cliente Supabase já possui o token de acesso
                                     usuario_res = supabase.table("usuarios").select("*").eq("email", email_login).execute()
@@ -361,6 +385,7 @@ if st.sidebar.button("🚪 Sair", key="logout_btn"):
     st.rerun()
 
 st.title(f"Olá, {user['nome']}!")
+
 
 # --------------------------------------------------
 # 5. PAINEL GESTOR MÁXIMO (ADMIN COMPLETO)
@@ -1131,6 +1156,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

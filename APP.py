@@ -555,46 +555,49 @@ if user['cargo'] == "Gestor Máximo":
                         st.warning("Selecione pelo menos um funcionário.")
                     else:
                         try:
-                            lider_email = st.session_state.usuario_logado['email']  # quem está logado é o líder
-                            
+                            lider_email = st.session_state.usuario_logado['email']
+    
                             for email in u_func:
+                                # Cria vínculo lider-liderado
                                 supabase.table("vinculos").insert({
                                     "lider": lider_email,
                                     "liderado": email
                                 }).execute()
-                            
-                            st.success(f"Equipe vinculada à unidade {u_unidade}!")
-                            
-                            # Atualiza a unidade na memória para a interface
+    
+                                # Atualiza a unidade na tabela usuarios
+                                supabase.table("usuarios").update({
+                                    "unidade": u_unidade
+                                }).eq("email", email).execute()
+    
+                            # Atualiza memória local para a interface
                             for u in st.session_state.db_usuarios:
                                 if u['email'] in u_func:
                                     u['unidade'] = u_unidade
-                            
+    
+                            st.success(f"Equipe vinculada à unidade {u_unidade}!")
                             st.rerun()
                         except Exception as e:
                             st.error(f"Erro ao vincular funcionários: {e}")
-        
-        # --- PARTE 3: VISUALIZAÇÃO POR UNIDADE ---
-        st.write("---")
-        for uni in unidades_db:
-            with st.container(border=True):
-                # Filtra usuários desta unidade
-                membros = [u for u in st.session_state.db_usuarios if u.get('unidade') == uni['nome']]
-                
-                col_u, col_exc = st.columns([0.8, 0.2])
-                col_u.markdown(f"### 📍 {uni['nome']}")
-                
-                # Botão para excluir unidade
-                if col_exc.button("🗑️", key=f"del_uni_{uni['id']}", help="Excluir Unidade"):
-                    supabase.table("unidades").delete().eq("id", uni['id']).execute()
-                    st.rerun()
-                
-                if membros:
-                    for m in membros:
-                        cargo_emoji = "🩺" if m['cargo'] == "Enfermeiro" else "👤"
-                        st.write(f"{cargo_emoji} **{m['nome']}** ({m['cargo']})")
-                else:
-                    st.caption("Nenhum funcionário nesta unidade.")
+            
+            # --- PARTE 3: VISUALIZAÇÃO POR UNIDADE ---
+            st.write("---")
+            for uni in unidades_db:
+                with st.container(border=True):
+                    membros = [u for u in st.session_state.db_usuarios if u.get('unidade') == uni['nome']]
+                    
+                    col_u, col_exc = st.columns([0.8, 0.2])
+                    col_u.markdown(f"### 📍 {uni['nome']}")
+                    
+                    if col_exc.button("🗑️", key=f"del_uni_{uni['id']}", help="Excluir Unidade"):
+                        supabase.table("unidades").delete().eq("id", uni['id']).execute()
+                        st.rerun()
+                    
+                    if membros:
+                        for m in membros:
+                            cargo_emoji = "🩺" if m['cargo'] == "Enfermeiro" else "👤"
+                            st.write(f"{cargo_emoji} **{m['nome']}** ({m['cargo']})")
+                    else:
+                        st.caption("Nenhum funcionário nesta unidade.")
 
     with t_aprovar:
     
@@ -1153,6 +1156,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

@@ -658,8 +658,6 @@ if user['cargo'] == "Gestor Máximo":
         st.session_state.funcionario_para_remover = None
         st.session_state.unidade_para_remover = None
     
-        # Chama rerun seguro
-        st.experimental_rerun()
     
     # --- Rerun seguro para criação/alocação ---
     if st.session_state.get("rerun_needed", False):
@@ -1223,6 +1221,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

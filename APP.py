@@ -646,14 +646,14 @@ if user['cargo'] == "Gestor Máximo":
             
                 # --- PARTE 1: Criar nova unidade ---
                 with st.expander("➕ Criar Nova Unidade/Setor", expanded=False):
-                    with st.form("form_unidade"):
+                    # Use uma key fixa e única (não repetir em outro lugar)
+                    with st.form("cadastro_unidade_form"):
                         nova_unidade = st.text_input("Nome da Unidade (ex: USF Boiçucanga, Administrativo):")
                         if st.form_submit_button("Cadastrar Unidade"):
                             if nova_unidade:
                                 try:
                                     supabase.table("unidades").insert({"nome": nova_unidade}).execute()
                                     st.success("Unidade criada!")
-                                    # Marcar rerun seguro
                                     st.session_state.rerun_needed = True
                                 except Exception as e:
                                     st.error(f"Erro ao criar: {e}")
@@ -1459,6 +1459,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

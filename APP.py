@@ -510,69 +510,69 @@ if user['cargo'] == "Gestor Máximo":
                     except Exception as e:
                         st.error("Erro ao excluir usuário")
 
-with t_vinc:
-    st.subheader("🏢 Gestão de Unidades e Equipes")
-    
-    # --- PARTE 1: CRIAR NOVA UNIDADE ---
-    with st.expander("➕ Criar Nova Unidade/Setor", expanded=False):
-        with st.form("form_unidade"):
-            nova_unidade = st.text_input("Nome da Unidade (ex: USF Boiçucanga, Administrativo):")
-            if st.form_submit_button("Cadastrar Unidade"):
-                if nova_unidade:
-                    try:
-                        supabase.table("unidades").insert({"nome": nova_unidade}).execute()
-                        st.success("Unidade criada!")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Erro ao criar: {e}")
-                else:
-                    st.warning("Digite um nome para a unidade.")
-    
-    # --- Carrega unidades do banco ---
-    res_unidades = supabase.table("unidades").select("*").execute()
-    unidades_db = res_unidades.data if res_unidades.data else []
-
-    if not unidades_db:
-        st.warning("Nenhuma unidade cadastrada.")
-    else:
-        st.write("---")
-        st.markdown("### 🔗 Vincular Funcionários")
+    with t_vinc:
+        st.subheader("🏢 Gestão de Unidades e Equipes")
         
-        with st.container(border=True):
-            c1, c2 = st.columns(2)
-            u_unidade = c1.selectbox("Selecione a Unidade:", [uni['nome'] for uni in unidades_db])
+        # --- PARTE 1: CRIAR NOVA UNIDADE ---
+        with st.expander("➕ Criar Nova Unidade/Setor", expanded=False):
+            with st.form("form_unidade"):
+                nova_unidade = st.text_input("Nome da Unidade (ex: USF Boiçucanga, Administrativo):")
+                if st.form_submit_button("Cadastrar Unidade"):
+                    if nova_unidade:
+                        try:
+                            supabase.table("unidades").insert({"nome": nova_unidade}).execute()
+                            st.success("Unidade criada!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao criar: {e}")
+                    else:
+                        st.warning("Digite um nome para a unidade.")
+        
+        # --- Carrega unidades do banco ---
+        res_unidades = supabase.table("unidades").select("*").execute()
+        unidades_db = res_unidades.data if res_unidades.data else []
+    
+        if not unidades_db:
+            st.warning("Nenhuma unidade cadastrada.")
+        else:
+            st.write("---")
+            st.markdown("### 🔗 Vincular Funcionários")
             
-            # Lista todos os usuários
-            todos_users = [u['email'] for u in st.session_state.db_usuarios]
-            u_func = c2.multiselect(
-                "Selecionar Funcionários:", 
-                todos_users, 
-                format_func=lambda x: next(u['nome'] for u in st.session_state.db_usuarios if u['email'] == x)
-            )
-            
-            if st.button("Confirmar Alocação na Unidade", use_container_width=True):
-                if not u_func:
-                    st.warning("Selecione pelo menos um funcionário.")
-                else:
-                    try:
-                        lider_email = st.session_state.usuario_logado['email']  # quem está logado é o líder
-                        
-                        for email in u_func:
-                            supabase.table("vinculos").insert({
-                                "lider": lider_email,
-                                "liderado": email
-                            }).execute()
-                        
-                        st.success(f"Equipe vinculada à unidade {u_unidade}!")
-                        
-                        # Atualiza a unidade na memória para a interface
-                        for u in st.session_state.db_usuarios:
-                            if u['email'] in u_func:
-                                u['unidade'] = u_unidade
-                        
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Erro ao vincular funcionários: {e}")
+            with st.container(border=True):
+                c1, c2 = st.columns(2)
+                u_unidade = c1.selectbox("Selecione a Unidade:", [uni['nome'] for uni in unidades_db])
+                
+                # Lista todos os usuários
+                todos_users = [u['email'] for u in st.session_state.db_usuarios]
+                u_func = c2.multiselect(
+                    "Selecionar Funcionários:", 
+                    todos_users, 
+                    format_func=lambda x: next(u['nome'] for u in st.session_state.db_usuarios if u['email'] == x)
+                )
+                
+                if st.button("Confirmar Alocação na Unidade", use_container_width=True):
+                    if not u_func:
+                        st.warning("Selecione pelo menos um funcionário.")
+                    else:
+                        try:
+                            lider_email = st.session_state.usuario_logado['email']  # quem está logado é o líder
+                            
+                            for email in u_func:
+                                supabase.table("vinculos").insert({
+                                    "lider": lider_email,
+                                    "liderado": email
+                                }).execute()
+                            
+                            st.success(f"Equipe vinculada à unidade {u_unidade}!")
+                            
+                            # Atualiza a unidade na memória para a interface
+                            for u in st.session_state.db_usuarios:
+                                if u['email'] in u_func:
+                                    u['unidade'] = u_unidade
+                            
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao vincular funcionários: {e}")
         
         # --- PARTE 3: VISUALIZAÇÃO POR UNIDADE ---
         st.write("---")
@@ -1153,6 +1153,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

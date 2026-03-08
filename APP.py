@@ -592,22 +592,41 @@ if user['cargo'] == "Gestor Máximo":
                 btn_update, btn_delete = st.columns(2)
     
                 if btn_update.button("💾 Salvar Alterações", key=f"up_{u['email']}") and pode_editar:
-                    dados_update = {
-                        "nome": edit_nome,
-                        "email": f"{edit_matricula}@rh12.com",
-                        "cargo": edit_cargo
-                    }
+                    novo_email = f"{edit_matricula}@rh12.com"
+                    email_antigo = u["email"]
                     
-                    if edit_senha:
-                        dados_update["matricula"] = gerar_hash(edit_senha)
-    
                     try:
-                        supabase.table("usuarios").update(dados_update).eq("email", u["email"]).execute()
+                        # 1. ATUALIZAR O AUTH (O que permite o login funcionar)
+                        # Nota: Para alterar dados de OUTROS usuários, o Supabase exige a Service Role Key
+                        # Se estiver usando a chave comum, o usuário só consegue alterar a própria senha.
+                        
+                        dados_auth = {"email": novo_email}
+                        if edit_senha:
+                            dados_auth["password"] = edit_senha
+                            
+                        # Tenta atualizar o Auth primeiro
+                        supabase.auth.admin.update_user_by_id(
+                            u['id'], # Você precisa ter a coluna 'id' (uuid) na sua tabela usuarios
+                            attributes=dados_auth
+                        )
+                
+                        # 2. ATUALIZAR A TABELA PÚBLICA (Para visualização no App)
+                        dados_tabela = {
+                            "nome": edit_nome,
+                            "email": novo_email,
+                            "cargo": edit_cargo
+                        }
+                        if edit_senha:
+                            dados_tabela["matricula"] = gerar_hash(edit_senha)
+                
+                        supabase.table("usuarios").update(dados_tabela).eq("email", email_antigo).execute()
+                        
                         st.session_state.db_usuarios = carregar_usuarios()
-                        st.success("Dados atualizados!")
+                        st.success("Login e Dados atualizados com sucesso!")
                         st.rerun()
+                
                     except Exception as e:
-                        st.error(f"Erro na atualização: {e}")
+                        st.error(f"Erro ao sincronizar login: {e}")
     
                 if btn_delete.button("🗑️ Excluir Conta", key=f"del_{u['email']}") and pode_editar:
                     try:
@@ -1440,6 +1459,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

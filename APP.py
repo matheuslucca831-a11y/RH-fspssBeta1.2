@@ -646,7 +646,7 @@ if user['cargo'] == "Gestor Máximo":
     # --- Chama rerun seguro uma vez ---
     if st.session_state.get("rerun_needed", False):
         st.session_state["rerun_needed"] = False
-        st.experimental_rerun()
+        st.rerun()  # <--- MUDOU AQUI!
                 
     with t_aprovar:
     
@@ -1205,6 +1205,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

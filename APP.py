@@ -12,7 +12,22 @@ import streamlit as st
 from supabase import create_client
 from passlib.hash import pbkdf2_sha256
 
+import hashlib
+from supabase import create_client
 
+def gerar_hash(senha: str) -> str:
+    return hashlib.sha256(senha.encode()).hexdigest()
+
+def carregar_usuarios():
+    SUPABASE_URL = "https://<SEU-PROJETO>.supabase.co"
+    SUPABASE_SERVICE_KEY = "<SUA_SERVICE_ROLE_KEY>"
+    supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    try:
+        data = supabase.table("usuarios").select("*").execute().data
+        return data if data else []
+    except Exception as e:
+        print("Erro ao carregar usuários:", e)
+        return []
 
 def remover_funcionario_da_unidade(email_func):
     lider_email = st.session_state.usuario_logado['email']
@@ -503,8 +518,6 @@ if user['cargo'] == "Gestor Máximo":
         "📈 Relatórios"
     ])
     with t_users:
-        import streamlit as st
-        from supabase import create_client
         from utils import gerar_hash, carregar_usuarios  # Seu código de hash e carregamento
     
         # --- INICIALIZAÇÃO DO SUPABASE COM SERVICE_ROLE KEY ---
@@ -1439,6 +1452,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

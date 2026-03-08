@@ -614,7 +614,24 @@ if user['cargo'] == "Gestor Máximo":
         if unidades_filtradas_pesquisa:
             for uni in unidades_filtradas_pesquisa:
                 with st.container(border=True):
-                    st.markdown(f"### 📍 {uni['nome']}")
+                    col_uni, col_del = st.columns([0.9, 0.1])
+                    with col_uni:
+                        st.markdown(f"### 📍 {uni['nome']}")
+                    with col_del:
+                        if st.button("🗑️", key=f"del_uni_{uni['id']}", help="Excluir Unidade"):
+                            try:
+                                # Deleta a unidade do banco
+                                supabase.table("unidades").delete().eq("id", uni['id']).execute()
+                                
+                                # Opcional: remove unidade dos usuários no cache
+                                for u in st.session_state.db_usuarios:
+                                    if u.get("unidade") == uni['nome']:
+                                        u["unidade"] = None
+                                
+                                st.success(f"Unidade {uni['nome']} excluída com sucesso!")
+                                st.session_state.rerun_needed = True
+                            except Exception as e:
+                                st.error(f"Erro ao excluir unidade: {e}")
                     membros = [u for u in st.session_state.db_usuarios if u.get('unidade') == uni['nome']]
     
                     if membros:
@@ -1206,6 +1223,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

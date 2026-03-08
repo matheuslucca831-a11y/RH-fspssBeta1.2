@@ -590,46 +590,51 @@ if user['cargo'] == "Gestor Máximo":
                 )
     
                 btn_update, btn_delete = st.columns(2)
-    
-                if btn_update.button("💾 Salvar Alterações", key=f"up_{u['email']}"):
-                    # --- 1. PREPARAÇÃO DOS DADOS (FORÇANDO STRING) ---
-                    matricula_limpa = str(edit_matricula).strip()
-                    novo_email = f"{matricula_limpa}@rh12.com"
-                    email_antigo = str(u["email"])
                     
+                if btn_update.button("💾 Salvar Alterações", key=f"up_{u['email']}"):
+                    # --- 1. CONVERSÃO FORÇADA PARA STRING (Evita o erro .replace) ---
                     try:
-                        # --- 2. ATUALIZAR O SISTEMA DE LOGIN (AUTH) ---
-                        # Nota: Você precisa do ID (UUID) do usuário que vem do Supabase
-                        user_id = u.get('id') 
+                        # Pega a matrícula do input e garante que é string
+                        matricula_input = str(edit_matricula).strip()
+                        novo_email = str(f"{matricula_input}@rh12.com")
                         
-                        if user_id:
-                            auth_data = {"email": novo_email}
-                            if edit_senha:
-                                auth_data["password"] = str(edit_senha)
-                            
-                            # Isso atualiza o login real!
-                            supabase.auth.admin.update_user_by_id(user_id, attributes=auth_data)
-                
-                        # --- 3. ATUALIZAR A SUA TABELA DE VISUALIZAÇÃO ---
+                        # O email antigo que está no loop também deve ser string
+                        email_referencia = str(u["email"]).strip()
+                        
+                        # --- 2. PREPARAÇÃO DOS DADOS DA TABELA ---
                         dados_tabela = {
-                            "nome": str(edit_nome),
+                            "nome": str(edit_nome).strip(),
                             "email": novo_email,
-                            "cargo": str(edit_cargo)
+                            "cargo": str(edit_cargo).strip()
                         }
                         
+                        # Se houver senha, gera o hash (que já sai como string)
                         if edit_senha:
-                            # Salva o hash para conferência interna se necessário
                             dados_tabela["matricula"] = gerar_hash(str(edit_senha))
                 
-                        # Atualiza a linha no banco usando o e-mail antigo como referência
-                        supabase.table("usuarios").update(dados_tabela).eq("email", email_antigo).execute()
+                        # --- 3. EXECUÇÃO NO BANCO ---
+                        # O erro 'int' costuma morrer aqui no .eq() se o email_referencia for lido como número
+                        supabase.table("usuarios").update(dados_tabela).eq("email", email_referencia).execute()
                         
-                        st.success("✅ Login e cadastro atualizados!")
+                        # --- 4. ATUALIZAÇÃO DO LOGIN (AUTH) ---
+                        # Importante: Se você mudar o email na tabela, tem que mudar no Auth pro login funcionar
+                        user_id = u.get('id')
+                        if user_id:
+                            auth_updates = {"email": novo_email}
+                            if edit_senha:
+                                auth_updates["password"] = str(edit_senha)
+                            
+                            # Requer Service Role Key
+                            supabase.auth.admin.update_user_by_id(str(user_id), attributes=auth_updates)
+                
+                        st.success("✅ Usuário e Login atualizados com sucesso!")
                         st.session_state.db_usuarios = carregar_usuarios()
                         st.rerun()
                 
                     except Exception as e:
-                        st.error(f"Erro técnico: {e}")
+                        st.error(f"Erro técnico detalhado: {e}")
+                        # Log para você ver qual variável está causando o problema
+                        st.info(f"DEBUG: Email Ref: {email_referencia} | Tipo: {type(email_referencia)}")
                                 
     with t_vinc:
         st.subheader("🏢 Gestão de Unidades e Equipes")
@@ -1452,6 +1457,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

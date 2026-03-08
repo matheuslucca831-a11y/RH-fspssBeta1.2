@@ -1009,7 +1009,7 @@ else:
                     
                     nova_ocorrencia = {
                         "solicitante": st.session_state.usuario_logado.get('nome'),
-                        "email_solicitante": st.session_state.usuario_logado["email"],,
+                        "email_solicitante": st.session_state.usuario_logado["email"],
                         "data": txt_data,
                         "motivo": motivo_final,
                         "status": "⏳ Pendente",
@@ -1122,6 +1122,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

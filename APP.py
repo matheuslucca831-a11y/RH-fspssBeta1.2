@@ -785,63 +785,45 @@ if user['cargo'] == "Gestor Máximo":
                     df_filtrado = df_filtrado.sort_values(by="id", ascending=ordem_crescente)
     
                     # --- 4. EXIBIÇÃO DOS CARDS ---
+                    # --- 4. EXIBIÇÃO DOS CARDS ---
                     if df_filtrado.empty:
-                        st.info("Nenhum registro encontrado para os filtros selecionados.")
+                        st.info("Nenhum registro encontrado.")
                     else:
-                        # Mostra a quantidade encontrada (Dica de ADS para o gestor)
-                        st.caption(f"🔢 {len(df_filtrado)} registros encontrados")
-                        
-                        for _, o in df_filtrado.iterrows():
+                        for index, o in df_filtrado.iterrows():
+                            # SEGURANÇA: Pegamos o ID da ocorrência garantindo que é o da coluna 'id'
+                            # e não o índice do DataFrame ou outra coluna
+                            try:
+                                id_banco = int(o['id']) 
+                            except:
+                                # Se o 'id' falhar, tentamos buscar por outra coluna comum
+                                # ou mostramos erro amigável para debug
+                                st.error(f"Erro de Mapeamento: O valor '{o['id']}' não é um ID de banco (BigInt).")
+                                continue
+                    
                             with st.container(border=True):
                                 c1, c2 = st.columns([0.8, 0.2])
                                 
-                                resumo = (
-                                    f"👤 **{o['solicitante']}**\n\n"
-                                    f"📅 {o['data']} | 💡 Motivo: {o['motivo']}\n"
-                                    f"📌 Status: :{cor_status(o['status'])}[**{o['status']}**]"
-                                )
-    
-                                if "aprovado_por" in o and pd.notna(o["aprovado_por"]) and o["aprovado_por"] != "":
-                                    resumo += f"\n\n✅ **Analisado por:** {o['aprovado_por']}"
-    
-                                if o.get("horarios"):
-                                    resumo += f"\n🕒 {o['horarios']}"
-    
-                                c1.markdown(resumo)
-    
-                                if o.get("detalhes"):
-                                    with c1.expander("Ver justificativa"):
-                                        st.write(o["detalhes"])
-    
-                                if o.get("anexo"):
-                                    with st.expander("🖼️ Visualizar Documento", expanded=False):
-                                        exibir_anexo(o["anexo"])
-    
-                                # --- Ação de Arquivar ---
-                                if c2.button("📦 Arquivar", key=f"arq_filt_{o['id']}", use_container_width=True):
+                                # ... (seu código de montagem do resumo aqui) ...
+                                c1.markdown(f"👤 **{o['solicitante']}**\n\n📅 {o['data']} | ID: {id_banco}")
+                    
+                                # --- Botão de Arquivar ---
+                                if c2.button("📦 Arquivar", key=f"arq_{id_banco}", use_container_width=True):
                                     try:
-                                        # Forçamos a conversão para INTEIRO para casar com o int8 do banco
-                                        id_real = int(o['id']) 
-                                        
-                                        supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", id_real).execute()
-                                        
+                                        supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", id_banco).execute()
                                         st.session_state.db_ocorrencias = carregar_ocorrencias()
                                         st.success("Arquivado!")
                                         st.rerun()
                                     except Exception as e:
-                                        st.error(f"Erro ao arquivar: {e}")
-                                
-                                # --- Ação de Excluir ---
-                                if c2.button("🗑️ Excluir", key=f"exc_adm_{o['id']}", use_container_width=True):
+                                        st.error(f"Erro: {e}")
+                    
+                                # --- Botão de Excluir ---
+                                if c2.button("🗑️ Excluir", key=f"exc_{id_banco}", use_container_width=True):
                                     try:
-                                        id_real = int(o['id'])
-                                        
-                                        supabase.table("ocorrencias").delete().eq("id", id_real).execute()
-                                        
+                                        supabase.table("ocorrencias").delete().eq("id", id_banco).execute()
                                         st.session_state.db_ocorrencias = carregar_ocorrencias()
                                         st.rerun()
                                     except Exception as e:
-                                        st.error(f"Erro ao excluir: {e}")
+                                        st.error(f"Erro: {e}")
                 else:
                     st.info("Sem registros no banco de dados.")
 
@@ -1229,6 +1211,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

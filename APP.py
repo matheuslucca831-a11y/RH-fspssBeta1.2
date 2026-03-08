@@ -817,7 +817,7 @@ if user['cargo'] == "Gestor Máximo":
                                     with st.expander("🖼️ Visualizar Documento", expanded=False):
                                         exibir_anexo(o["anexo"])
     
-                                # Arquivar
+                                # --- Monitoramento Geral (t_hist) ---
                                 if c2.button("📦 Arquivar", key=f"arq_filt_{o['id']}", use_container_width=True):
                                     try:
                                         supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", o['id']).execute()
@@ -827,10 +827,9 @@ if user['cargo'] == "Gestor Máximo":
                                     except Exception as e:
                                         st.error(f"Erro: {e}")
                                 
-                                # Restaurar
-                                if st.button("📤 Restaurar", key=f"rest_{o['id']}"):
+                                if c2.button("🗑️ Excluir", key=f"exc_adm_{o['id']}", use_container_width=True):
                                     try:
-                                        supabase.table("ocorrencias").update({"arquivado": "Não"}).eq("id", o['id']).execute()
+                                        supabase.table("ocorrencias").delete().eq("id", o['id']).execute()
                                         st.session_state.db_ocorrencias = carregar_ocorrencias()
                                         st.rerun()
                                     except Exception as e:
@@ -1222,6 +1221,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

@@ -611,12 +611,14 @@ if user['cargo'] == "Gestor Máximo":
             pesquisa_unidade = st.text_input("Digite o nome da unidade para pesquisa", key="pesquisa_unidade")
             unidades_filtradas_pesquisa = [u for u in unidades_db if pesquisa_unidade.lower() in u['nome'].lower()]
             
+            # Variável de controle para rerun
+            st.session_state.funcionario_para_remover = None
+            
             if unidades_filtradas_pesquisa:
                 for uni in unidades_filtradas_pesquisa:
                     with st.container(border=True):
                         st.markdown(f"### 📍 {uni['nome']}")
                         membros = [u for u in st.session_state.db_usuarios if u.get('unidade') == uni['nome']]
-                        funcionario_removido = None  # ← marcador seguro
             
                         if membros:
                             for m in membros:
@@ -625,18 +627,28 @@ if user['cargo'] == "Gestor Máximo":
                                 with col1:
                                     st.write(f"{cargo_emoji} **{m['nome']}** ({m['cargo']})")
                                 with col2:
-                                    if st.button("❌", key=f"remover_{uni['id']}_{m['email']}", help="Remover funcionário da unidade"):
-                                        funcionario_removido = m['email']
+                                    if st.button("❌", key=f"remover_{uni['id']}_{m['email']}"):
+                                        # Marcar funcionário para remoção no session_state
+                                        st.session_state.funcionario_para_remover = m['email']
+                                        st.session_state.unidade_para_remover = uni['nome']
             
-                            # Fora do loop: remove de forma segura e faz rerun
-                            if funcionario_removido:
-                                remover_funcionario_da_unidade(funcionario_removido)
-                                st.success(f"Funcionário removido da unidade {uni['nome']}.")
-                                st.experimental_rerun()
                         else:
                             st.caption("Nenhum funcionário nesta unidade.")
+            
             else:
                 st.info("Nenhuma unidade encontrada.")
+            
+            # --- Executa a remoção fora do loop ---
+            if st.session_state.funcionario_para_remover:
+                remover_funcionario_da_unidade(st.session_state.funcionario_para_remover)
+                st.success(f"{st.session_state.funcionario_para_remover} removido da unidade {st.session_state.unidade_para_remover}.")
+                
+                # Limpa flags
+                st.session_state.funcionario_para_remover = None
+                st.session_state.unidade_para_remover = None
+                
+                # Chama rerun apenas uma vez
+                st.experimental_rerun()
                 
     with t_aprovar:
     
@@ -1195,6 +1207,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

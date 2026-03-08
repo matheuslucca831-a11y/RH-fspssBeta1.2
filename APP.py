@@ -626,7 +626,7 @@ if user['cargo'] == "Gestor Máximo":
                     format_func=lambda x: next(u['nome'] for u in st.session_state.db_usuarios if u['email'] == x)
                 )
     
-                if st.button("🚀 Confirmar Alocação", use_container_width=True):
+                if st.button("Confirmar Alocação", use_container_width=True):
                     if not u_func:
                         st.warning("Selecione pelo menos um funcionário.")
                     else:
@@ -1117,7 +1117,7 @@ else:
                 type=["png", "jpg", "jpeg", "pdf"]
             )
             # BOTÃO DO FORMULÁRIO
-            enviar = st.form_submit_button("🚀 Enviar Solicitação", use_container_width=True)
+            enviar = st.form_submit_button("Enviar Solicitação", use_container_width=True)
     
             # --- PROCESSAMENTO DO ENVIO (Apenas uma vez) ---
             if enviar:
@@ -1270,6 +1270,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

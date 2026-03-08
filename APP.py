@@ -585,37 +585,37 @@ if user['cargo'] == "Gestor Máximo":
 
                 if c1.button("💾 Atualizar", key=f"up_{u['email']}") and pode_editar:
                 
-                    auth_id = u.get("id_auth")  # ID do usuário no Supabase Auth
-                    if not auth_id:
-                        st.error("❌ Usuário não possui ID do Auth. Não é possível atualizar login.")
-                    else:
-                        try:
-                            # --- Atualiza no Supabase Auth ---
-                            update_data = {}
-                            if nova_matricula_login != u["email"].split("@")[0]:
-                                update_data["email"] = f"{nova_matricula_login}@rh12.com"
-                            if nova_senha:
-                                update_data["password"] = nova_senha
+                    id_auth = u["id_auth"]  # pega o ID do Auth
+                    senha_hash = gerar_hash(nova_senha) if nova_senha else u["matricula"]
                 
-                            if update_data:
-                                supabase.auth.admin.update_user_by_id(auth_id, update_data)
+                    try:
+                        # 1️⃣ Atualiza o Supabase Auth
+                        update_auth = {}
+                        if nova_matricula_login != u["email"]:
+                            update_auth["email"] = nova_matricula_login
+                        if nova_senha:
+                            update_auth["password"] = nova_senha
                 
-                            # --- Atualiza na tabela usuarios ---
-                            supabase.table("usuarios").update({
-                                "nome": novo_nome,
-                                "cargo": novo_cargo,
-                                "email": f"{nova_matricula_login}@rh12.com"  # mantém sincronizado
-                            }).eq("id_auth", auth_id).execute()
+                        if update_auth:
+                            supabase.auth.admin.update_user(id_auth, update_auth)
                 
-                            # Atualiza cache local
-                            st.session_state.db_usuarios = carregar_usuarios()
+                        # 2️⃣ Atualiza a tabela local
+                        supabase.table("usuarios").update({
+                            "nome": novo_nome,
+                            "email": nova_matricula_login,
+                            "cargo": novo_cargo,
+                            "matricula": senha_hash
+                        }).eq("id_auth", id_auth).execute()
                 
-                            st.success("Usuário atualizado com sucesso!")
-                            st.rerun()
+                        # Atualiza a lista em memória
+                        st.session_state.db_usuarios = carregar_usuarios()
                 
-                        except Exception as e:
-                            st.error("Erro ao atualizar usuário")
-                            st.write(e)
+                        st.success("Usuário atualizado com sucesso!")
+                        st.rerun()
+                
+                    except Exception as e:
+                        st.error("Erro ao atualizar usuário")
+                        st.write(e)
 
                 if c2.button("🗑️ Excluir", key=f"del_{u['email']}") and pode_editar:
                     try:
@@ -1446,6 +1446,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

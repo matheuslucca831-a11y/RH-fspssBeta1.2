@@ -298,16 +298,20 @@ if not st.session_state.autenticado:
             e_in = st.text_input("Matrícula")
             s_in = st.text_input("(Senha)", type="password")
             if st.button("Entrar", use_container_width=True):
+                email_login = f"{str(e_in).strip().lower()}@rh12.com"
+                senha_login = s_in
             
                 try:
-            
-                    email_login = f"{str(e_in).strip().lower()}@rh12.com"
-            
-                    # 1️⃣ Autentica no Supabase Auth
-                    resposta = supabase.auth.sign_in_with_password({
+                    # 1️⃣ Autentica no Supabase
+                    auth_resposta = supabase.auth.sign_in_with_password({
                         "email": email_login,
-                        "password": s_in
+                        "password": senha_login
                     })
+                    
+                    # Se a autenticação falhar, o objeto 'auth_resposta' terá erro
+                    if auth_resposta.user is None:
+                        st.error("❌ Matrícula ou senha incorreta.")
+                        st.stop()
             
                     # 2️⃣ Busca usuário correto na tabela
                     usuario_res = supabase.table("usuarios").select("*").eq("email", email_login).execute()
@@ -320,6 +324,9 @@ if not st.session_state.autenticado:
                     # 3️⃣ Atualiza session_state
                     st.session_state.usuario_logado = usuario
                     st.session_state.autenticado = True
+            
+                    # 4️⃣ Opcional: salvar login em cookie ou arquivo
+                    salvar_login(email_login)
             
                     st.success(f"Login realizado! Bem-vindo, {usuario['nome']}")
                     st.rerun()
@@ -1120,6 +1127,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

@@ -19,8 +19,8 @@ def gerar_hash(senha: str) -> str:
     return hashlib.sha256(senha.encode()).hexdigest()
 
 def carregar_usuarios():
-    SUPABASE_URL = "https://<SEU-PROJETO>.supabase.co"
-    SUPABASE_SERVICE_KEY = "<SUA_SERVICE_ROLE_KEY>"
+    SUPABASE_URL = "https://zedgyvekirmsqvstqvjt.supabase.co"
+    SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplZGd5dmVraXJtc3F2c3Rxdmp0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjY3ODQ3OCwiZXhwIjoyMDg4MjU0NDc4fQ.sAtQhOTjjB1OhSxT6IRG3CNr1FDAdP8Tm_zqcAeo8pI"
     supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
     try:
         data = supabase.table("usuarios").select("*").execute().data
@@ -1462,6 +1462,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

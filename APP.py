@@ -21,20 +21,33 @@ def gerar_hash(senha: str) -> str:
 
 
 def remover_funcionario_da_unidade(email_func):
-    lider_email = st.session_state.usuario_logado['email']
+    try:
+        lider_email = st.session_state.usuario_logado['email']
 
-    # Remove vínculo lider-liderado
-    supabase.table("vinculos")\
-        .delete()\
-        .eq("lider", lider_email)\
-        .eq("liderado", email_func)\
-        .execute()
+        # 1. Remove vínculo lider-liderado no banco
+        supabase.table("vinculos")\
+            .delete()\
+            .eq("lider", lider_email)\
+            .eq("liderado", email_func)\
+            .execute()
 
-    # Atualiza unidade do usuário para nulo
-    supabase.table("usuarios")\
-        .update({"unidade": None})\
-        .eq("email", email_func)\
-        .execute()
+        # 2. Atualiza unidade do usuário para nulo no banco
+        supabase.table("usuarios")\
+            .update({"unidade": None})\
+            .eq("email", email_func)\
+            .execute()
+
+        # 3. ATUALIZAÇÃO LOCAL (O segredo para não dar erro de interface)
+        # Remove a unidade da lista de usuários que já está carregada na memória
+        if "db_usuarios" in st.session_state:
+            for u in st.session_state.db_usuarios:
+                if u['email'] == email_func:
+                    u['unidade'] = None
+        
+        return True
+    except Exception as e:
+        st.error(f"Erro ao remover vínculo: {e}")
+        return False
 
     # Atualiza memória local para refletir a mudança
     for u in st.session_state.db_usuarios:
@@ -1486,6 +1499,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

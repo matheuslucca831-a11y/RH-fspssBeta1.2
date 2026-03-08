@@ -817,33 +817,31 @@ if user['cargo'] == "Gestor Máximo":
                                     with st.expander("🖼️ Visualizar Documento", expanded=False):
                                         exibir_anexo(o["anexo"])
     
+                                # --- Ação de Arquivar ---
                                 if c2.button("📦 Arquivar", key=f"arq_filt_{o['id']}", use_container_width=True):
                                     try:
-                                        # Forçamos o ID para string ou int dependendo de como ele vem do DF
-                                        id_ocorrencia = o['id'] 
+                                        # Forçamos a conversão para INTEIRO para casar com o int8 do banco
+                                        id_real = int(o['id']) 
                                         
-                                        # Se o seu ID no banco for número, use: int(id_ocorrencia)
-                                        # Se for UUID (letras e números), mantenha como string
-                                        
-                                        supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", id_ocorrencia).execute()
+                                        supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", id_real).execute()
                                         
                                         st.session_state.db_ocorrencias = carregar_ocorrencias()
                                         st.success("Arquivado!")
                                         st.rerun()
                                     except Exception as e:
-                                        st.error(f"Erro: {e}")
+                                        st.error(f"Erro ao arquivar: {e}")
                                 
                                 # --- Ação de Excluir ---
                                 if c2.button("🗑️ Excluir", key=f"exc_adm_{o['id']}", use_container_width=True):
                                     try:
-                                        id_ocorrencia = o['id']
+                                        id_real = int(o['id'])
                                         
-                                        supabase.table("ocorrencias").delete().eq("id", id_ocorrencia).execute()
+                                        supabase.table("ocorrencias").delete().eq("id", id_real).execute()
                                         
                                         st.session_state.db_ocorrencias = carregar_ocorrencias()
                                         st.rerun()
                                     except Exception as e:
-                                        st.error(f"Erro: {e}")
+                                        st.error(f"Erro ao excluir: {e}")
                 else:
                     st.info("Sem registros no banco de dados.")
 
@@ -1231,6 +1229,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

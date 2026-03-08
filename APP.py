@@ -948,7 +948,9 @@ else:
         # 2. Filtramos as ocorrências: Devem ser "Pendentes" E o solicitante deve ser da unidade
         pendentes = [
             o for o in st.session_state.db_ocorrencias 
-            if o["status"] == "⏳ Pendente" and o["email_solicitante"] in equipe_unidade
+            if o["status"] == "⏳ Pendente"
+            and o["email_solicitante"] in equipe_unidade
+            and o["email_solicitante"] != email_logado
         ]
         
         tab_aprov, tab_nova, tab_hist, tab_decididos = st.tabs([
@@ -1267,6 +1269,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

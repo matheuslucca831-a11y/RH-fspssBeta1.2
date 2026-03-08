@@ -325,7 +325,7 @@ if not st.session_state.autenticado:
                         user_id = auth_resposta.user.id
             
                         # 3️⃣ Busca usuário na tabela usuarios
-                        usuario_res = supabase.table("usuarios").select("*").eq("id", user_id).execute()
+                        usuario_res = supabase.table("usuarios").select("*").eq("email", email_login).execute()
             
                         if usuario_res.data:
                             usuario = usuario_res.data[0]
@@ -1147,6 +1147,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

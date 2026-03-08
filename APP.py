@@ -596,38 +596,41 @@ if user['cargo'] == "Gestor Máximo":
                             
                         if btn_update.button("💾 Salvar Alterações", key=f"btn_up_{u['id']}"):
                             try:
-                                matricula_input = str(edit_matricula).strip()
-                                novo_email = f"{matricula_input}@rh12.com"
-                                email_referencia = str(u["email"]).strip()
-                                
-                                dados_tabela = {
-                                    "nome": str(edit_nome).strip(),
-                                    "email": novo_email,
-                                    "cargo": str(edit_cargo).strip()
-                                }
-                                if edit_senha:
-                                    dados_tabela["matricula"] = gerar_hash(str(edit_senha))
+                                # 1. Definições de e-mail (O antigo que está no objeto 'u' e o novo do input)
+                                email_atual_no_auth = str(u["email"]).strip().lower() 
+                                novo_email = f"{str(edit_matricula).strip()}@rh12.com"
                         
-                                # 1. Atualiza a tabela pública
-                                supabase.table("usuarios").update(dados_tabela).eq("id", u['id']).execute()
-                        
-                                # 2. SINCRONIZA O LOGIN (Busca robusta)
+                                # 2. Busca o usuário no Auth para pegar o UUID (id interno do Supabase)
                                 res_auth = supabase_admin.auth.admin.list_users()
-                                
-                                # Blinda o retorno: tenta pegar .users, se não existir, assume que já é a lista
                                 users_data = getattr(res_auth, 'users', res_auth) if not isinstance(res_auth, list) else res_auth
                                 
-                                target_auth_user = next((user for user in users_data if user.email == email_referencia), None)
-        
+                                # Procuramos o usuário pelo e-mail que ele TINHA antes da edição
+                                target_auth_user = next((user for user in users_data if user.email.lower() == email_atual_no_auth), None)
+                        
                                 if target_auth_user:
+                                    # --- PASSO A: ATUALIZAR O AUTH PRIMEIRO ---
                                     auth_updates = {"email": novo_email}
                                     if edit_senha:
                                         auth_updates["password"] = str(edit_senha)
                                     
+                                    # Usamos o ID do Auth (UUID) para não ter erro de e-mail duplicado ou não achado
                                     supabase_admin.auth.admin.update_user_by_id(target_auth_user.id, attributes=auth_updates)
-                                    st.success("✅ Login e Cadastro sincronizados!")
+                        
+                                    # --- PASSO B: ATUALIZAR A TABELA 'usuarios' ---
+                                    dados_tabela = {
+                                        "nome": str(edit_nome).strip(),
+                                        "email": novo_email,
+                                        "cargo": str(edit_cargo).strip()
+                                    }
+                                    if edit_senha:
+                                        dados_tabela["matricula"] = gerar_hash(str(edit_senha))
+                        
+                                    # Atualiza no banco usando o ID da linha
+                                    supabase.table("usuarios").update(dados_tabela).eq("id", u['id']).execute()
+                                    
+                                    st.success("✅ Login (Auth) e Banco de Dados atualizados com sucesso!")
                                 else:
-                                    st.warning(f"⚠️ Dados salvos na tabela, mas o e-mail '{email_referencia}' não foi achado no Auth.")
+                                    st.error(f"❌ Erro: O usuário '{email_atual_no_auth}' não existe no Authentication.")
                         
                                 st.session_state.db_usuarios = carregar_usuarios()
                                 st.rerun()
@@ -1456,6 +1459,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

@@ -405,8 +405,12 @@ if not st.session_state.get("autenticado", False) or st.session_state.get("usuar
 user = st.session_state.usuario_logado
 email_logado = user['email']
 
-if "db_ocorrencias" not in st.session_state or not st.session_state.db_ocorrencias:
-    st.session_state.db_ocorrencias = carregar_ocorrencias()
+# garante que os dados do banco carreguem
+if st.session_state.autenticado:
+    try:
+        st.session_state.db_ocorrencias = carregar_ocorrencias()
+    except:
+        st.session_state.db_ocorrencias = []
 
 
 # --------------------------------------------------
@@ -1247,6 +1251,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

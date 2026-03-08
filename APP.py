@@ -298,56 +298,43 @@ if not st.session_state.autenticado:
             e_in = st.text_input("Matrícula")
             s_in = st.text_input("(Senha)", type="password")
             if st.button("Entrar", use_container_width=True):
-                email_login = f"{str(e_in).strip().lower()}@rh12.com"
-                senha_login = s_in
+                            email_login = f"{str(e_in).strip().lower()}@rh12.com"
+                            senha_login = s_in
+                            
+                            try:
+                                # 1️⃣ Autentica no Supabase Auth
+                                auth_resposta = supabase.auth.sign_in_with_password({
+                                    "email": email_login, 
+                                    "password": senha_login
+                                })
             
-                try:
-                    # 1️⃣ Autentica no Supabase
-                    # --- Debug: Mostrar valores de login ---
-                    st.write("🔹 Tentando login com:")
-                    st.write("Email:", email_login)
-                    st.write("Senha digitada:", s_in)  # só para desenvolvimento, nunca em produção
-                    try:
-                        resposta = supabase.auth.sign_in_with_password({
-                            "email": email_login,
-                            "password": s_in
-                        })
-                        st.write("✅ Resposta do Supabase Auth:", resposta)
-                    except Exception as e:
-                        st.error("❌ Falha no login")
-                        st.write("Erro completo:", e)
-                    auth_resposta = supabase.auth.sign_in_with_password({
-                        "email": email_login,
-                        "password": senha_login
-                    })
-                    
-                    # Se a autenticação falhar, o objeto 'auth_resposta' terá erro
-                    if auth_resposta.user is None:
-                        st.error("❌ Matrícula ou senha incorreta.")
-                        st.stop()
+                                # Verifica se o login no Auth funcionou
+                                if auth_resposta.user:
+                                    # 2️⃣ Busca o perfil na sua tabela 'usuarios'
+                                    # Como acabamos de logar, o cliente Supabase já possui o token de acesso
+                                    usuario_res = supabase.table("usuarios").select("*").eq("email", email_login).execute()
+                                    
+                                    if usuario_res.data:
+                                        usuario = usuario_res.data[0]
+                                        
+                                        # 3️⃣ Salva no Session State do Streamlit
+                                        st.session_state.usuario_logado = usuario
+                                        st.session_state.autenticado = True
+                                        st.session_state.login_time = datetime.now() # Importante para o seu timer!
+                                        
+                                        # 4️⃣ Persistência opcional (o seu arquivo JSON)
+                                        salvar_login(email_login)
+                                        
+                                        st.success(f"✅ Bem-vindo, {usuario['nome']}!")
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Usuário autenticado, mas não encontrado na tabela 'usuarios'.")
+                                else:
+                                    st.error("❌ E-mail ou senha inválidos.")
             
-                    # 2️⃣ Busca usuário correto na tabela
-                    usuario_res = supabase.table("usuarios").select("*").eq("email", email_login).execute()
-                    if not usuario_res.data:
-                        st.error("❌ Usuário não encontrado na tabela interna.")
-                        st.stop()
-            
-                    usuario = usuario_res.data[0]
-            
-                    # 3️⃣ Atualiza session_state
-                    st.session_state.usuario_logado = usuario
-                    st.session_state.autenticado = True
-            
-                    # 4️⃣ Opcional: salvar login em cookie ou arquivo
-                    salvar_login(email_login)
-            
-                    st.success(f"Login realizado! Bem-vindo, {usuario['nome']}")
-                    st.rerun()
-            
-                except Exception as e:
-                    st.error("❌ Matrícula ou senha incorreta.")
-                    st.write(e)
-
+                            except Exception as e:
+                                st.error("❌ Falha na conexão ou dados incorretos.")
+                                # st.write(e) # Use apenas para debug se precisar
 # Trava de segurança: Se não autenticou, para o script aqui e não executa o resto
 if not st.session_state.get("autenticado", False) or st.session_state.usuario_logado is None:
     st.stop()
@@ -555,7 +542,11 @@ if user['cargo'] == "Gestor Máximo":
                 if st.button("Confirmar Alocação na Unidade", use_container_width=True):
                     try:
                         for email in u_func:
-                            supabase.table("usuarios").update({"unidade": u_unidade}).eq("email", email).execute()
+                            supabase.table("vinculos").insert({
+                                "email_funcionario": email,
+                                "unidade": u_unidade,
+                                "data_alocacao": datetime.now().isoformat()
+                            }).execute()
                         st.success(f"Equipe vinculada à unidade {u_unidade}!")
                         # Atualize seus usuários na memória aqui se necessário
                         st.rerun()
@@ -1140,6 +1131,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

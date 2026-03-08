@@ -378,6 +378,12 @@ if user['cargo'] == "Gestor Máximo":
                 n_e = c1.text_input("Matrícula")
                 n_c = c2.selectbox("Cargo", ["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"])
                 if st.form_submit_button("Salvar"):
+                                    # --- VALIDAÇÃO DE SEGURANÇA ---
+                                    if len(str(n_m).strip()) < 6:
+                                        st.error("🔒 A senha deve ter no mínimo 6 caracteres.")
+                                    elif not n_e or not n_n:
+                                        st.warning("⚠️ Preencha Nome e Matrícula.")
+                                    else:
                                     email_interno = f"{n_e}@rh.fspss"
 
                                     novo_usuario = {
@@ -1003,7 +1009,7 @@ else:
                     
                     nova_ocorrencia = {
                         "solicitante": st.session_state.usuario_logado.get('nome'),
-                        "email_solicitante": st.session_state.usuario_logado.get('email'),
+                        "email_solicitante": st.session_state.usuario_logado["email"],,
                         "data": txt_data,
                         "motivo": motivo_final,
                         "status": "⏳ Pendente",
@@ -1116,6 +1122,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

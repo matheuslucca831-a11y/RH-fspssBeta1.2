@@ -571,38 +571,67 @@ if user['cargo'] == "Gestor Máximo":
                 unidade_selecionada = st.session_state['unidade_selecionada']
     
             if unidade_selecionada:
-                st.markdown(f"### Funcionários na unidade: {unidade_selecionada['nome']}")
-                todos_users = [u['email'] for u in st.session_state.db_usuarios]
-                u_func = st.multiselect(
-                    "Selecionar Funcionários para alocar:",
-                    todos_users,
-                    format_func=lambda x: next(u['nome'] for u in st.session_state.db_usuarios if u['email'] == x)
-                )
-    
-                if st.button("Confirmar Alocação", use_container_width=True):
-                    if not u_func:
-                        st.warning("Selecione pelo menos um funcionário.")
-                    else:
-                        try:
-                            lider_email = st.session_state.usuario_logado['email']
-                            for email in u_func:
-                                supabase.table("vinculos").insert({
-                                    "lider": lider_email,
-                                    "liderado": email
-                                }).execute()
-                                supabase.table("usuarios").update({
-                                    "unidade": unidade_selecionada['nome']
-                                }).eq("email", email).execute()
-    
-                            # Atualiza memória local
-                            for u in st.session_state.db_usuarios:
-                                if u['email'] in u_func:
-                                    u['unidade'] = unidade_selecionada['nome']
-    
-                            st.success(f"Equipe vinculada à unidade {unidade_selecionada['nome']}!")
-                            st.experimental_rerun()
-                        except Exception as e:
-                            st.error(f"Erro ao vincular funcionários: {e}")
+                            st.markdown(f"### 👥 Gerenciar Equipe: {unidade_selecionada['nome']}")
+                            
+                            # --- Filtro de Funcionários (Igual ao de Unidades) ---
+                            filtro_func = st.text_input("🔍 Pesquisar funcionário por nome", placeholder="Digite o nome...")
+                            
+                            # Filtra os usuários que batem com a pesquisa
+                            usuarios_filtrados = [
+                                u for u in st.session_state.db_usuarios 
+                                if filtro_func.lower() in u['nome'].lower()
+                            ]
+            
+                            # Criamos uma lista no session_state para "carrinho" de alocação se não existir
+                            if 'selecionados_para_alocar' not in st.session_state:
+                                st.session_state.selecionados_para_alocar = []
+            
+                            if usuarios_filtrados:
+                                st.write("**Clique para adicionar à lista de alocação:**")
+                                # Mostra os botões dos funcionários filtrados
+                                cols = st.columns(3) # Organiza em 3 colunas para ficar bonito
+                                for idx, func in enumerate(usuarios_filtrados):
+                                    with cols[idx % 3]:
+                                        if st.button(f"➕ {func['nome']}", key=f"add_{func['email']}"):
+                                            if func['email'] not in st.session_state.selecionados_para_alocar:
+                                                st.session_state.selecionados_para_alocar.append(func['email'])
+            
+                            # Mostra quem já foi selecionado
+                            if st.session_state.selecionados_para_alocar:
+                                with st.container(border=True):
+                                    st.write("📌 **Funcionários selecionados:**")
+                                    for email_sel in st.session_state.selecionados_para_alocar:
+                                        nome_sel = next(u['nome'] for u in st.session_state.db_usuarios if u['email'] == email_sel)
+                                        col_n, col_r = st.columns([0.8, 0.2])
+                                        col_n.write(f"✅ {nome_sel}")
+                                        if col_r.button("🗑️", key=f"rem_lista_{email_sel}"):
+                                            st.session_state.selecionados_para_alocar.remove(email_sel)
+                                            st.rerun()
+            
+                                if st.button("🚀 Confirmar Alocação na Unidade", use_container_width=True, variant="primary"):
+                                    try:
+                                        lider_email = st.session_state.usuario_logado['email']
+                                        for email in st.session_state.selecionados_para_alocar:
+                                            # Insere no Supabase (Vínculos)
+                                            supabase.table("vinculos").insert({
+                                                "lider": lider_email,
+                                                "liderado": email
+                                            }).execute()
+                                            # Atualiza a Unidade no Perfil do Usuário
+                                            supabase.table("usuarios").update({
+                                                "unidade": unidade_selecionada['nome']
+                                            }).eq("email", email).execute()
+            
+                                        # Atualiza memória local para refletir na busca na hora
+                                        for u in st.session_state.db_usuarios:
+                                            if u['email'] in st.session_state.selecionados_para_alocar:
+                                                u['unidade'] = unidade_selecionada['nome']
+                                        
+                                        st.session_state.selecionados_para_alocar = [] # Limpa a lista
+                                        st.success(f"Equipe vinculada com sucesso!")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Erro: {e}")
     
             # --- PARTE 3: Aba de pesquisa de unidades ---
             st.markdown("---")
@@ -1191,6 +1220,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

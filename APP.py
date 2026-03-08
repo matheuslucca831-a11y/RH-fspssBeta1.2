@@ -562,7 +562,6 @@ if user['cargo'] == "Gestor Máximo":
                             supabase.table("vinculos").insert({
                                 "email_funcionario": email,
                                 "unidade": u_unidade,
-                                "data_alocacao": datetime.now().isoformat()
                             }).execute()
                         st.success(f"Equipe vinculada à unidade {u_unidade}!")
                         # Atualize seus usuários na memória aqui se necessário
@@ -1148,6 +1147,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

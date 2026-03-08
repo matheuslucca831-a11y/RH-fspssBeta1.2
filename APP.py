@@ -508,14 +508,6 @@ if user['cargo'] == "Gestor Máximo":
         "📦 Arquivo Morto",
         "📈 Relatórios"
     ])
-import streamlit as st
-import hashlib
-
-# --- FUNÇÃO AUXILIAR (Substituindo bcrypt por SHA256) ---
-def gerar_hash(texto):
-    return hashlib.sha256(str(texto).encode()).hexdigest()
-
-# --- ABA DE USUÁRIOS ---
     with t_users:
         # 1. FORMULÁRIO DE CADASTRO
         with st.expander("➕ Novo Usuário"):
@@ -1448,6 +1440,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

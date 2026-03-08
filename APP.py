@@ -946,43 +946,89 @@ if user['cargo'] == "Gestor Máximo":
         st.subheader("📦 Arquivo Morto - Ocorrências Arquivadas")
     
         if st.session_state.db_ocorrencias:
-            # Cria o DataFrame
             df_completo = pd.DataFrame(st.session_state.db_ocorrencias)
-            
-            # Garante que a coluna existe e trata valores nulos/vazios
+    
+            # Garante que a coluna 'arquivado' existe
             if "arquivado" not in df_completo.columns:
                 df_completo["arquivado"] = "Não"
             else:
                 df_completo["arquivado"] = df_completo["arquivado"].fillna("Não").replace("", "Não")
     
-            # FILTRO: Pega apenas o que é "Sim"
+            # FILTRA APENAS OS ARQUIVADOS
             df_arq = df_completo[df_completo["arquivado"] == "Sim"]
     
             if not df_arq.empty:
-                # ... (seu código de filtros f1, f2, f3, f4 aqui) ...
-                
-                # Lógica de máscara para os filtros internos do arquivo morto
-                mask_arq = pd.Series([True] * len(df_arq), index=df_arq.index)
-                
+                # --- 1. INTERFACE DE FILTROS ---
+                with st.container(border=True):
+                    f1, f2, f3, f4, f5 = st.columns(5)
+                    with f1: f_nome = st.text_input("👤 Nome", placeholder="Buscar...", key="f_nome_arq")
+                    with f2:
+                        opcoes_status = ["Todos"] + sorted(list(df_arq["status"].unique()))
+                        f_status = st.selectbox("📌 Status", opcoes_status, key="f_status_arq")
+                    with f3:
+                        opcoes_motivo = ["Todos", "🎯 Todas as Folgas", "⏰ Todas as Ocorrências"] + sorted(list(df_arq["motivo"].unique()))
+                        f_motivo = st.selectbox("💡 Motivo", opcoes_motivo, key="f_motivo_arq")
+                    with f4: f_data_sel = st.date_input("📅 Data", value=None, format="DD/MM/YYYY", key="f_data_arq")
+                    with f5: ordem = st.selectbox("⏳ Ordem", ["Mais Recentes", "Mais Antigas"], key="f_ordem_arq")
+    
+                # --- 2. LÓGICA DE FILTRO ---
+                mask = pd.Series([True] * len(df_arq), index=df_arq.index)
+    
                 if f_nome:
-                    mask_arq &= df_arq["solicitante"].str.contains(f_nome, case=False, na=False)
-                # ... (aplique os outros filtros f_status, f_motivo, f_data na mask_arq) ...
-                
-                df_arq_filtrado = df_arq[mask_arq]
-                
-                # Exibição dos cards (similar ao monitoramento geral)
-                for _, o in df_arq_filtrado.iterrows():
-                    with st.container(border=True):
-                        st.write(f"👤 **{o['solicitante']}**")
-                        st.write(f"📅 {o['data']} | Status: {o['status']}")
-                        
-                        # Botão para DESARQUIVAR (Opcional, mas útil)
-                        if st.button("📤 Restaurar", key=f"rest_{o['id']}"):
-                            supabase.table("ocorrencias").update({"arquivado": "Não"}).eq("id", o['id']).execute()
-                            st.session_state.db_ocorrencias = carregar_ocorrencias()
-                            st.rerun()
+                    mask &= df_arq["solicitante"].str.contains(f_nome, case=False, na=False)
+                if f_status != "Todos":
+                    mask &= df_arq["status"] == f_status
+    
+                if f_motivo == "🎯 Todas as Folgas":
+                    mask &= df_arq["motivo"].str.contains("Folga", case=False, na=False)
+                elif f_motivo == "⏰ Todas as Ocorrências":
+                    mask &= ~df_arq["motivo"].str.contains("Folga", case=False, na=False)
+                elif f_motivo != "Todos":
+                    mask &= df_arq["motivo"] == f_motivo
+    
+                if f_data_sel:
+                    data_str = f_data_sel.strftime("%Y-%m-%d")
+                    mask &= df_arq["data"].astype(str).str.contains(data_str, na=False)
+    
+                df_arq_filtrado = df_arq[mask].copy()
+                ordem_asc = (ordem == "Mais Antigas")
+                df_arq_filtrado = df_arq_filtrado.sort_values(by="id", ascending=ordem_asc)
+    
+                # --- 3. EXIBIÇÃO DOS CARDS ---
+                if df_arq_filtrado.empty:
+                    st.info("Nenhum registro arquivado encontrado.")
+                else:
+                    st.caption(f"🔢 {len(df_arq_filtrado)} registros encontrados")
+    
+                    for _, o in df_arq_filtrado.iterrows():
+                        with st.container(border=True):
+                            col_info, col_acao = st.columns([0.8, 0.2])
+    
+                            with col_info:
+                                st.markdown(f"👤 **{o['solicitante']}**")
+                                st.markdown(f"📅 {o['data']} | 💡 {o['motivo']} | 📌 {o['status']}")
+                                if o.get("horarios"):
+                                    st.caption(f"🕒 Horários: {o['horarios']}")
+                                if "aprovado_por" in o and pd.notna(o["aprovado_por"]) and o["aprovado_por"] != "":
+                                    st.markdown(f"✅ **Analisado por:** {o['aprovado_por']}")
+                                if o.get("detalhes"):
+                                    with st.expander("📄 Justificativa Completa"):
+                                        st.write(o["detalhes"])
+                                if o.get("anexo"):
+                                    with st.expander("🖼️ Visualizar Documento"):
+                                        exibir_anexo(o["anexo"])
+    
+                            with col_acao:
+                                if st.button("📤 Restaurar", key=f"rest_{o['id']}", use_container_width=True):
+                                    supabase.table("ocorrencias").update({"arquivado": "Não"}).eq("id", o['id']).execute()
+                                    st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                    st.rerun()
+                                if st.button("🗑️ Excluir", key=f"del_{o['id']}", use_container_width=True):
+                                    supabase.table("ocorrencias").delete().eq("id", o['id']).execute()
+                                    st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                    st.rerun()
             else:
-                st.info("Nenhum registro no arquivo morto.")
+                st.info("Nenhum registro arquivado.")
         else:
             st.info("Sem registros no banco de dados.")
 
@@ -1395,6 +1441,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

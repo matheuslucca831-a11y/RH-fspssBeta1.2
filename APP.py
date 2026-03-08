@@ -52,6 +52,8 @@ def carregar_vinculos():
         return vinc_dict
     except Exception as e:
         return {}
+
+@st.cache_data(ttl=5)
 def carregar_ocorrencias():
     try:
         res = supabase.table("ocorrencias").select("*").order("id", desc=True).execute()
@@ -1278,6 +1280,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

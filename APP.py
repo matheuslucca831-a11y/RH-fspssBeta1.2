@@ -12,7 +12,26 @@ import streamlit as st
 from supabase import create_client
 from passlib.hash import pbkdf2_sha256
 
+def remover_funcionario_da_unidade(email_func):
+    lider_email = st.session_state.usuario_logado['email']
 
+    # 1. Remove vínculo lider-liderado
+    supabase.table("vinculos")\
+        .delete()\
+        .eq("lider", lider_email)\
+        .eq("liderado", email_func)\
+        .execute()
+
+    # 2. Atualiza unidade do usuário para nulo
+    supabase.table("usuarios")\
+        .update({"unidade": None})\
+        .eq("email", email_func)\
+        .execute()
+
+    # 3. Atualiza memória local para refletir a mudança
+    for u in st.session_state.db_usuarios:
+        if u['email'] == email_func:
+            u['unidade'] = None
 
     
 def gerar_hash(senha):
@@ -542,7 +561,6 @@ if user['cargo'] == "Gestor Máximo":
                 c1, c2 = st.columns(2)
                 u_unidade = c1.selectbox("Selecione a Unidade:", [uni['nome'] for uni in unidades_db])
                 
-                # Lista todos os usuários
                 todos_users = [u['email'] for u in st.session_state.db_usuarios]
                 u_func = c2.multiselect(
                     "Selecionar Funcionários:", 
@@ -558,18 +576,15 @@ if user['cargo'] == "Gestor Máximo":
                             lider_email = st.session_state.usuario_logado['email']
     
                             for email in u_func:
-                                # Cria vínculo lider-liderado
                                 supabase.table("vinculos").insert({
                                     "lider": lider_email,
                                     "liderado": email
                                 }).execute()
     
-                                # Atualiza a unidade na tabela usuarios
                                 supabase.table("usuarios").update({
                                     "unidade": u_unidade
                                 }).eq("email", email).execute()
     
-                            # Atualiza memória local para a interface
                             for u in st.session_state.db_usuarios:
                                 if u['email'] in u_func:
                                     u['unidade'] = u_unidade
@@ -579,7 +594,7 @@ if user['cargo'] == "Gestor Máximo":
                         except Exception as e:
                             st.error(f"Erro ao vincular funcionários: {e}")
             
-            # --- PARTE 3: VISUALIZAÇÃO POR UNIDADE ---
+            # --- PARTE 3: VISUALIZAÇÃO POR UNIDADE COM BOTÃO DE REMOVER ---
             st.write("---")
             for uni in unidades_db:
                 with st.container(border=True):
@@ -595,7 +610,14 @@ if user['cargo'] == "Gestor Máximo":
                     if membros:
                         for m in membros:
                             cargo_emoji = "🩺" if m['cargo'] == "Enfermeiro" else "👤"
-                            st.write(f"{cargo_emoji} **{m['nome']}** ({m['cargo']})")
+                            col1, col2 = st.columns([0.9, 0.1])
+                            with col1:
+                                st.write(f"{cargo_emoji} **{m['nome']}** ({m['cargo']})")
+                            with col2:
+                                if st.button("❌", key=f"remover_{m['email']}", help="Remover funcionário da unidade"):
+                                    remover_funcionario_da_unidade(m['email'])
+                                    st.success(f"{m['nome']} removido da unidade.")
+                                    st.rerun()
                     else:
                         st.caption("Nenhum funcionário nesta unidade.")
 
@@ -1156,6 +1178,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

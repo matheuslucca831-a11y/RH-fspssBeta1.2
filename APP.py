@@ -725,124 +725,103 @@ if user['cargo'] == "Gestor Máximo":
 
     
     with t_hist:
-                st.subheader("📊 Monitoramento Geral")
+            st.subheader("📊 Monitoramento Geral")
+            
+            if st.session_state.db_ocorrencias:
+                df_oc = pd.DataFrame(st.session_state.db_ocorrencias)
                 
-                # --- 1. INICIALIZAÇÃO (Evita o NameError) ---
-                f_nome = ""
-                f_status = "Todos"
-                f_motivo = "Todos"
-                f_data_sel = None
+                # --- 1. INTERFACE DE FILTROS ---
+                with st.container(border=True):
+                    f1, f2, f3, f4, f5 = st.columns(5)
+                    with f1: f_nome = st.text_input("👤 Nome", placeholder="Buscar...")
+                    with f2:
+                        opcoes_status = ["Todos"] + sorted(list(df_oc["status"].unique()))
+                        f_status = st.selectbox("📌 Status", opcoes_status)
+                    with f3:
+                        opcoes_motivo = ["Todos", "🎯 Todas as Folgas", "⏰ Todas as Ocorrências"] + sorted(list(df_oc["motivo"].unique()))
+                        f_motivo = st.selectbox("💡 Motivo", opcoes_motivo)
+                    with f4: f_data_sel = st.date_input("📅 Data", value=None, format="DD/MM/YYYY")
+                    with f5: ordem = st.selectbox("⏳ Ordem", ["Mais Recentes", "Mais Antigas"])
     
-                if st.session_state.db_ocorrencias:
-                    df_oc = pd.DataFrame(st.session_state.db_ocorrencias)
-                    
-                    # --- 2. INTERFACE DE FILTROS ---
-                    with st.container(border=True):
-                        f1, f2, f3, f4, f5 = st.columns(5)
-                        
-                        with f1:
-                            f_nome = st.text_input("👤 Nome", placeholder="Buscar...")
-                        with f2:
-                            opcoes_status = ["Todos"] + sorted(list(df_oc["status"].unique()))
-                            f_status = st.selectbox("📌 Status", opcoes_status)
-                        with f3:
-                            opcoes_motivo = [
-                                "Todos", 
-                                "🎯 Todas as Folgas", 
-                                "⏰ Todas as Ocorrências"
-                            ] + sorted(list(df_oc["motivo"].unique()))
-                            f_motivo = st.selectbox("💡 Motivo", opcoes_motivo)
-                        with f4:
-                            f_data_sel = st.date_input("📅 Data", value=None, format="DD/MM/YYYY")
-                        with f5:
-                            ordem = st.selectbox("⏳ Ordem", ["Mais Recentes", "Mais Antigas"])
+                # --- 2. LÓGICA DE FILTRAGEM ---
+                mask = df_oc["arquivado"] != "Sim"
+                if f_nome: mask &= df_oc["solicitante"].str.contains(f_nome, case=False, na=False)
+                if f_status != "Todos": mask &= df_oc["status"] == f_status
+                
+                if f_motivo == "🎯 Todas as Folgas":
+                    mask &= df_oc["motivo"].str.contains("Folga", case=False, na=False)
+                elif f_motivo == "⏰ Todas as Ocorrências":
+                    mask &= ~df_oc["motivo"].str.contains("Folga", case=False, na=False)
+                elif f_motivo != "Todos":
+                    mask &= df_oc["motivo"] == f_motivo
     
-                    # --- 3. LÓGICA DE FILTRAGEM (Ajustada para os novos grupos) ---
-                    mask = df_oc["arquivado"] != "Sim"
+                if f_data_sel:
+                    data_str = f_data_sel.strftime("%Y-%m-%d")
+                    mask &= df_oc["data"].astype(str).str.contains(data_str, na=False)
     
-                    if f_nome:
-                        mask &= df_oc["solicitante"].str.contains(f_nome, case=False, na=False)
+                df_filtrado = df_oc[mask].copy()
+                ordem_asc = (ordem == "Mais Antigas")
+                df_filtrado = df_filtrado.sort_values(by="id", ascending=ordem_asc)
     
-                    if f_status != "Todos":
-                        mask &= df_oc["status"] == f_status
-    
-                    # Lógica para os botões agrupados
-                    if f_motivo == "🎯 Todas as Folgas":
-                        mask &= df_oc["motivo"].str.contains("Folga", case=False, na=False)
-                    elif f_motivo == "⏰ Todas as Ocorrências":
-                        # Pega tudo que NÃO tem "Folga" no nome
-                        mask &= ~df_oc["motivo"].str.contains("Folga", case=False, na=False)
-                    elif f_motivo != "Todos":
-                        mask &= df_oc["motivo"] == f_motivo
-    
-                    if f_data_sel:
-                        data_str = f_data_sel.strftime("%Y-%m-%d")
-                        mask &= df_oc["data"].astype(str).str.contains(data_str, na=False)
-    
-                    df_filtrado = df_oc[mask]
-
-                    ordem_crescente = (ordem == "Mais Antigas")
-                    df_filtrado = df_filtrado.sort_values(by="id", ascending=ordem_crescente)
-    
-                    # --- 4. EXIBIÇÃO DOS CARDS ---
-                    # --- 4. EXIBIÇÃO DOS CARDS ---
-                    if df_filtrado.empty:
-                        st.info("Nenhum registro encontrado.")
-                    else:
-                        for index, o in df_filtrado.iterrows():
-                            # ESTRATÉGIA DE ADS: Varredura de colunas para achar o ID Numérico
-                            # Vamos olhar cada coluna da linha 'o' e a primeira que for um número, será nosso ID
-                            id_banco = None
-                            
-                            for col_nome in df_filtrado.columns:
-                                valor_col = o[col_nome]
-                                # Se o valor for um número inteiro (ou puder ser convertido), esse é o ID da Ocorrência
-                                try:
-                                    # Verificamos se não é um booleano e se é um número puro
-                                    if not isinstance(valor_col, bool) and str(valor_col).isdigit():
-                                        id_banco = int(valor_col)
-                                        # Opcional: Se você sabe que seus IDs são sempre > 0, valide aqui
-                                        if id_banco > 0: 
-                                            break 
-                                except:
-                                    continue
-                    
-                            # Se mesmo varrendo tudo não achar um número, avisamos o erro
-                            if id_banco is None:
-                                st.error(f"❌ Erro de Coluna: Não achei o número do registro na linha {index}.")
-                                st.write("Dados da linha para conferência:", o.to_dict())
-                                continue
-                    
-                            with st.container(border=True):
-                                c1, c2 = st.columns([0.8, 0.2])
-                                
-                                # Agora usamos o id_banco que encontramos na "caça" acima
-                                resumo = f"👤 **{o['solicitante']}**\n\n📅 {o['data']} | **ID Registro: {id_banco}**"
-                                c1.markdown(resumo)
-                    
-                                # --- Botão de Arquivar ---
-                                if c2.button("📦 Arquivar", key=f"arq_final_{id_banco}"):
-                                    try:
-                                        # O .eq("id", id_banco) agora vai receber o número 27, 28... 
-                                        # e o Supabase (BigInt) vai aceitar na hora!
-                                        supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", id_banco).execute()
-                                        st.session_state.db_ocorrencias = carregar_ocorrencias()
-                                        st.success(f"Registro {id_banco} arquivado!")
-                                        st.rerun()
-                                    except Exception as e:
-                                        st.error(f"Erro no banco: {e}")
-                    
-                                # --- Botão de Excluir ---
-                                if c2.button("🗑️ Excluir", key=f"exc_final_{id_banco}"):
-                                    try:
-                                        supabase.table("ocorrencias").delete().eq("id", id_banco).execute()
-                                        st.session_state.db_ocorrencias = carregar_ocorrencias()
-                                        st.rerun()
-                                    except Exception as e:
-                                        st.error(f"Erro ao excluir: {e}")
+                # --- 3. EXIBIÇÃO DOS CARDS RECONSTRUÍDOS ---
+                if df_filtrado.empty:
+                    st.info("Nenhum registro encontrado.")
                 else:
-                    st.info("Sem registros no banco de dados.")
-
+                    st.caption(f"🔢 {len(df_filtrado)} registros encontrados")
+                    
+                    for _, o in df_filtrado.iterrows():
+                        # Garantia do ID como inteiro para o Supabase
+                        id_real = int(o['id']) 
+                        
+                        with st.container(border=True):
+                            col_info, col_acao = st.columns([0.8, 0.2])
+                            
+                            # -- Informações Principais --
+                            with col_info:
+                                # Tenta usar a cor do status se a função existir
+                                try:
+                                    status_formatado = f":{cor_status(o['status'])}[**{o['status']}**]"
+                                except:
+                                    status_formatado = f"**{o['status']}**"
+                                    
+                                st.markdown(f"### 👤 {o['solicitante']}")
+                                st.markdown(f"📅 **Data:** {o['data']} | 💡 **Motivo:** {o['motivo']} | 📌 **Status:** {status_formatado}")
+                                
+                                if o.get("horarios"):
+                                    st.caption(f"🕒 Horários: {o['horarios']}")
+                                
+                                if "aprovado_por" in o and pd.notna(o["aprovado_por"]) and o["aprovado_por"] != "":
+                                    st.markdown(f"✅ **Analisado por:** {o['aprovado_por']}")
+    
+                                # Justificativa e Anexo (Funcionalidades que tinham sumido)
+                                if o.get("detalhes"):
+                                    with st.expander("📄 Ver Justificativa Completa"):
+                                        st.write(o["detalhes"])
+                                
+                                if o.get("anexo"):
+                                    with st.expander("🖼️ Visualizar Documento"):
+                                        exibir_anexo(o["anexo"])
+    
+                            # -- Botões de Ação Lateral --
+                            with col_acao:
+                                st.write("") # Alinhamento
+                                if st.button("📦 Arquivar", key=f"btn_arq_{id_real}", use_container_width=True):
+                                    try:
+                                        supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", id_real).execute()
+                                        st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Erro: {e}")
+    
+                                if st.button("🗑️ Excluir", key=f"btn_exc_{id_real}", use_container_width=True):
+                                    try:
+                                        supabase.table("ocorrencias").delete().eq("id", id_real).execute()
+                                        st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Erro: {e}")
+            else:
+                st.info("Sem registros no banco de dados.")
 
     with t_arq:
         st.subheader("📦 Arquivo Morto - Ocorrências Arquivadas")
@@ -1227,6 +1206,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

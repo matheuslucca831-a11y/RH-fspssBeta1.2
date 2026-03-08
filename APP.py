@@ -637,6 +637,33 @@ if user['cargo'] == "Gestor Máximo":
                         
                             except Exception as e:
                                 st.error(f"Erro ao sincronizar: {e}")
+
+                        # BOTÃO EXCLUIR
+                        if btn_delete.button("🗑️ Excluir Usuário", key=f"btn_del_{u['id']}"):
+                            try:
+                                email_para_deletar = str(u["email"]).strip().lower()
+                                
+                                # 1. Busca o UUID no Auth para garantir a exclusão correta
+                                res_auth = supabase_admin.auth.admin.list_users()
+                                users_data = getattr(res_auth, 'users', res_auth) if not isinstance(res_auth, list) else res_auth
+                                
+                                target_auth_user = next((user for user in users_data if user.email.lower() == email_para_deletar), None)
+        
+                                # 2. Se o usuário existe no Auth, deleta lá primeiro
+                                if target_auth_user:
+                                    supabase_admin.auth.admin.delete_user(target_auth_user.id)
+                                
+                                # 3. Deleta da tabela pública de usuários (usando o ID único)
+                                supabase.table("usuarios").delete().eq("id", u['id']).execute()
+                                
+                                st.success(f"✅ Usuário {u['nome']} removido do sistema e do Login!")
+                                
+                                # Atualiza a lista e recarrega a página
+                                st.session_state.db_usuarios = carregar_usuarios()
+                                st.rerun()
+        
+                            except Exception as e:
+                                st.error(f"Erro ao excluir usuário: {e}")
                                 
     with t_vinc:
         st.subheader("🏢 Gestão de Unidades e Equipes")
@@ -1459,6 +1486,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

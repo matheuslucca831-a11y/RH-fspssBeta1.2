@@ -629,10 +629,10 @@ if user['cargo'] == "Gestor Máximo":
                                         st.experimental_rerun()
                         else:
                             st.caption("Nenhum funcionário nesta unidade.")
+                else:
+                    st.info("Nenhuma unidade encontrada.")
             else:
-                st.info("Nenhuma unidade encontrada.")
-        else:
-            st.warning("Nenhuma unidade cadastrada ainda.")
+                st.warning("Nenhuma unidade cadastrada ainda.")
                 
     with t_aprovar:
     
@@ -1191,6 +1191,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

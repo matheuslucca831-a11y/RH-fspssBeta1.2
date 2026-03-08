@@ -988,8 +988,8 @@ if user['cargo'] == "Gestor Máximo":
 
 
     with t_rel:
-
-        st.subheader("📈 Relatório Mensal de Ocorrências")
+    
+        st.subheader("📈 Relatório Mensal")
     
         if st.button("📊 Gerar relatório do mês"):
     
@@ -1013,25 +1013,32 @@ if user['cargo'] == "Gestor Máximo":
                 except:
                     continue
     
-            total = len(ocorrencias_mes)
+            # separação
+            folgas = [o for o in ocorrencias_mes if "folga" in o["motivo"].lower()]
+            ocorrs = [o for o in ocorrencias_mes if "folga" not in o["motivo"].lower()]
     
-            aprovadas = len([o for o in ocorrencias_mes if "Deferido" in o["status"]])
-            negadas = len([o for o in ocorrencias_mes if "Indeferido" in o["status"]])
-            pendentes = len([o for o in ocorrencias_mes if "Aguardando" in o["status"]])
+            st.markdown("## 🎯 Folgas")
     
-            st.markdown("### 📊 Resumo do mês")
+            col1, col2, col3 = st.columns(3)
     
-            c1, c2, c3, c4 = st.columns(4)
+            col1.metric("Total", len(folgas))
+            col2.metric("Deferidas", len([o for o in folgas if "Deferido" in o["status"]]))
+            col3.metric("Pendentes", len([o for o in folgas if "Aguardando" in o["status"]]))
     
-            c1.metric("Total", total)
-            c2.metric("Aprovadas", aprovadas)
-            c3.metric("Negadas", negadas)
-            c4.metric("Pendentes", pendentes)
+            st.markdown("---")
     
-            # relatório por unidade
+            st.markdown("## ⏰ Ocorrências")
+    
+            col1, col2, col3 = st.columns(3)
+    
+            col1.metric("Total", len(ocorrs))
+            col2.metric("Resolvidas", len([o for o in ocorrs if "Deferido" in o["status"]]))
+            col3.metric("Pendentes", len([o for o in ocorrs if "Aguardando" in o["status"]]))
+    
+            # por unidade
             contagem_unidade = Counter(o.get("unidade", "Sem unidade") for o in ocorrencias_mes)
     
-            st.markdown("### 🏢 Ocorrências por unidade")
+            st.markdown("## 🏢 Registros por unidade")
     
             for unidade, qtd in contagem_unidade.items():
                 st.write(f"**{unidade}** — {qtd}")
@@ -1388,6 +1395,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

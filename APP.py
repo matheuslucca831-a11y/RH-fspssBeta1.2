@@ -564,79 +564,76 @@ if user['cargo'] == "Gestor Máximo":
             u for u in st.session_state.db_usuarios 
             if busca.lower() in u['nome'].lower() or busca in str(u.get('email', ''))
         ]
-    
+            
         for u in usuarios_filtrados:
-            # Evita que o usuário logado se auto-exclua ou edite (opcional)
-            if u['email'] == st.session_state.usuario_logado.get('email'): 
-                continue
-                
-            with st.expander(f"👤 {u['nome']} — {u['cargo']}"):
-                pode_editar = st.session_state.usuario_logado.get("cargo") == "Gestor Máximo"
-                
-                col1, col2 = st.columns(2)
-                
-                edit_nome = col1.text_input("Nome", value=u["nome"], key=f"nome_edit_{u['id']}", disabled=not pode_editar)
-                
-                # Mostra apenas a parte da matrícula antes do @
-                matrícula_atual = u["email"].split("@")[0]
-                edit_matricula = col2.text_input("Matrícula", value=matrícula_atual, key=f"mat_edit_{u['id']}", disabled=not pode_editar)
-                
-                edit_senha = col1.text_input("Alterar Senha", type="password", key=f"pass_edit_{u['id']}", disabled=not pode_editar)
-                
-                edit_cargo = col2.selectbox(
-                    "Cargo",
-                    ["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"],
-                    index=["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"].index(u['cargo']),
-                    key=f"c_{u['email']}",
-                    disabled=not pode_editar
-                )
-    
-                btn_update, btn_delete = st.columns(2)
-                    
-                if btn_update.button("💾 Salvar Alterações", key=f"up_{u['email']}"):
-                    try:
-                        # 1. Preparação (Garante que tudo é String)
-                        matricula_input = str(edit_matricula).strip()
-                        novo_email = f"{matricula_input}@rh12.com"
-                        email_referencia = str(u["email"]).strip()
+                    # Evita que o usuário logado se auto-exclua ou edite (opcional)
+                    if u['email'] == st.session_state.usuario_logado.get('email'): 
+                        continue
                         
-                        # 2. Atualiza a Tabela de Visualização
-                        dados_tabela = {
-                            "nome": str(edit_nome).strip(),
-                            "email": novo_email,
-                            "cargo": str(edit_cargo).strip()
-                        }
-                        if edit_senha:
-                            # O login usa a senha pura, mas sua tabela guarda o hash para histórico
-                            dados_tabela["matricula"] = gerar_hash(str(edit_senha))
-                
-                        supabase.table("usuarios").update(dados_tabela).eq("email", email_referencia).execute()
-                
-                        # 3. SINCRONIZA O LOGIN (O pulo do gato)
-                        # Como o ID pode vir errado da tabela, buscamos o ID real no Auth pelo e-mail
-                        res_auth = supabase_admin.auth.admin.list_users()
+                    with st.expander(f"👤 {u['nome']} — {u['cargo']}"):
+                        pode_editar = st.session_state.usuario_logado.get("cargo") == "Gestor Máximo"
                         
-                        # Se res_auth for uma lista, usamos direto. Se for objeto, usamos .users
-                        users_data = res_auth if isinstance(res_auth, list) else res_auth.users
+                        col1, col2 = st.columns(2)
                         
-                        target_auth_user = next((user for user in users_data if user.email == email_referencia), None)
-
-                        if target_auth_user:
-                            auth_updates = {"email": novo_email}
-                            if edit_senha:
-                                auth_updates["password"] = str(edit_senha)
+                        # USANDO u['id'] EM TODAS AS KEYS PARA EVITAR DUPLICIDADE
+                        edit_nome = col1.text_input("Nome", value=u["nome"], key=f"nome_edit_{u['id']}", disabled=not pode_editar)
+                        
+                        matrícula_atual = u["email"].split("@")[0]
+                        edit_matricula = col2.text_input("Matrícula", value=matrícula_atual, key=f"mat_edit_{u['id']}", disabled=not pode_editar)
+                        
+                        edit_senha = col1.text_input("Alterar Senha", type="password", key=f"pass_edit_{u['id']}", disabled=not pode_editar)
+                        
+                        # CORREÇÃO DA KEY DO SELECTBOX
+                        edit_cargo = col2.selectbox(
+                            "Cargo",
+                            ["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"],
+                            index=["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"].index(u['cargo']),
+                            key=f"cargo_edit_{u['id']}", # <-- Mudado de c_{u['email']} para usar o ID
+                            disabled=not pode_editar
+                        )
+        
+                        btn_update, btn_delete = st.columns(2)
                             
-                            # Atualiza o motor de login usando o UUID verdadeiro
-                            supabase_admin.auth.admin.update_user_by_id(target_auth_user.id, attributes=auth_updates)
-                            st.success("✅ Login e Cadastro sincronizados via Admin!")
-                        else:
-                            st.warning("⚠️ Dados salvos, mas usuário não encontrado no sistema de Login.")
-                
-                        st.session_state.db_usuarios = carregar_usuarios()
-                        st.rerun()
-                
-                    except Exception as e:
-                        st.error(f"Erro ao sincronizar: {e}")
+                        if btn_update.button("💾 Salvar Alterações", key=f"btn_up_{u['id']}"):
+                            try:
+                                matricula_input = str(edit_matricula).strip()
+                                novo_email = f"{matricula_input}@rh12.com"
+                                email_referencia = str(u["email"]).strip()
+                                
+                                dados_tabela = {
+                                    "nome": str(edit_nome).strip(),
+                                    "email": novo_email,
+                                    "cargo": str(edit_cargo).strip()
+                                }
+                                if edit_senha:
+                                    dados_tabela["matricula"] = gerar_hash(str(edit_senha))
+                        
+                                # 1. Atualiza a tabela pública
+                                supabase.table("usuarios").update(dados_tabela).eq("id", u['id']).execute()
+                        
+                                # 2. SINCRONIZA O LOGIN (Busca robusta)
+                                res_auth = supabase_admin.auth.admin.list_users()
+                                
+                                # Blinda o retorno: tenta pegar .users, se não existir, assume que já é a lista
+                                users_data = getattr(res_auth, 'users', res_auth) if not isinstance(res_auth, list) else res_auth
+                                
+                                target_auth_user = next((user for user in users_data if user.email == email_referencia), None)
+        
+                                if target_auth_user:
+                                    auth_updates = {"email": novo_email}
+                                    if edit_senha:
+                                        auth_updates["password"] = str(edit_senha)
+                                    
+                                    supabase_admin.auth.admin.update_user_by_id(target_auth_user.id, attributes=auth_updates)
+                                    st.success("✅ Login e Cadastro sincronizados!")
+                                else:
+                                    st.warning(f"⚠️ Dados salvos na tabela, mas o e-mail '{email_referencia}' não foi achado no Auth.")
+                        
+                                st.session_state.db_usuarios = carregar_usuarios()
+                                st.rerun()
+                        
+                            except Exception as e:
+                                st.error(f"Erro ao sincronizar: {e}")
                                 
     with t_vinc:
         st.subheader("🏢 Gestão de Unidades e Equipes")
@@ -1459,6 +1456,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

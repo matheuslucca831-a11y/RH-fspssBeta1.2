@@ -126,7 +126,21 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+
 supabase_admin = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# 3. >>> COLOQUE AQUI AS INICIALIZAÇÕES <<<
+if "funcionario_para_remover" not in st.session_state:
+    st.session_state.funcionario_para_remover = None
+
+if "unidade_para_remover" not in st.session_state:
+    st.session_state.unidade_para_remover = None
+
+if "rerun_needed" not in st.session_state:
+    st.session_state.rerun_needed = False
+
+if "db_usuarios" not in st.session_state:
+    st.session_state.db_usuarios = carregar_usuarios()
 
 # RESTAURA LOGIN DO SUPABASE
 if "supabase_session" in st.session_state:
@@ -1499,6 +1513,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

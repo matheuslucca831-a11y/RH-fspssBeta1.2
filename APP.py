@@ -78,10 +78,10 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # RESTAURA LOGIN DO SUPABASE
 if "supabase_session" in st.session_state:
-    supabase.auth.set_session(
-        st.session_state.supabase_session["access_token"],
-        st.session_state.supabase_session["refresh_token"]
-    )
+        supabase.auth.set_session(
+            st.session_state.supabase_session.access_token,
+            st.session_state.supabase_session.refresh_token
+        )
 
 # FUNÇÃO PARA CARREGAR USUÁRIOS
 def carregar_usuarios():
@@ -1148,6 +1148,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

@@ -607,15 +607,17 @@ if user['cargo'] == "Gestor Máximo":
             # --- PARTE 3: Aba de pesquisa de unidades ---
             st.markdown("---")
             st.subheader("🔎 Pesquisar Unidades")
-    
+            
             pesquisa_unidade = st.text_input("Digite o nome da unidade para pesquisa", key="pesquisa_unidade")
             unidades_filtradas_pesquisa = [u for u in unidades_db if pesquisa_unidade.lower() in u['nome'].lower()]
-    
+            
             if unidades_filtradas_pesquisa:
                 for uni in unidades_filtradas_pesquisa:
                     with st.container(border=True):
                         st.markdown(f"### 📍 {uni['nome']}")
                         membros = [u for u in st.session_state.db_usuarios if u.get('unidade') == uni['nome']]
+                        funcionario_removido = None  # ← marcador seguro
+            
                         if membros:
                             for m in membros:
                                 cargo_emoji = "🩺" if m['cargo'] == "Enfermeiro" else "👤"
@@ -624,15 +626,17 @@ if user['cargo'] == "Gestor Máximo":
                                     st.write(f"{cargo_emoji} **{m['nome']}** ({m['cargo']})")
                                 with col2:
                                     if st.button("❌", key=f"remover_{uni['id']}_{m['email']}", help="Remover funcionário da unidade"):
-                                        remover_funcionario_da_unidade(m['email'])
-                                        st.success(f"{m['nome']} removido da unidade {uni['nome']}.")
-                                        st.experimental_rerun()
+                                        funcionario_removido = m['email']
+            
+                            # Fora do loop: remove de forma segura e faz rerun
+                            if funcionario_removido:
+                                remover_funcionario_da_unidade(funcionario_removido)
+                                st.success(f"Funcionário removido da unidade {uni['nome']}.")
+                                st.experimental_rerun()
                         else:
                             st.caption("Nenhum funcionário nesta unidade.")
-                else:
-                    st.info("Nenhuma unidade encontrada.")
             else:
-                st.warning("Nenhuma unidade cadastrada ainda.")
+                st.info("Nenhuma unidade encontrada.")
                 
     with t_aprovar:
     
@@ -1191,6 +1195,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

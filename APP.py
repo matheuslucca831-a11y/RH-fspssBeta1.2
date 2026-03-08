@@ -789,49 +789,54 @@ if user['cargo'] == "Gestor Máximo":
                     if df_filtrado.empty:
                         st.info("Nenhum registro encontrado.")
                     else:
-                        # DICA DE ADS: Vamos garantir que o ID seja o valor numérico da linha
-                        # Se o 'id' está vindo com texto, o ID real da ocorrência pode estar em outra coluna
-                        # ou o banco está retornando o UID do usuário no lugar do ID da tabela.
-                        
+                        # DEBUG TEMPORÁRIO (Pode apagar depois que funcionar)
+                        # st.write(df_filtrado.columns.tolist()) 
+                    
                         for index, o in df_filtrado.iterrows():
-                            # Tentativa de capturar o ID correto (deve ser o número 27, 28, 29...)
-                            # Se 'id' falhar, tentaremos usar o índice do banco ou 'id_ocorrencia'
-                            id_banco = o.get('id')
+                            # ESTRATÉGIA DE SEGURANÇA:
+                            # Tentamos pegar o ID real da ocorrência. 
+                            # No Supabase, se você não definiu um nome, ele é 'id'.
+                            # Mas se o 'id' está vindo com letras, o número está em outra coluna!
                             
-                            # Se o ID capturado for o texto 'f5dfa35b...', ele está errado!
-                            # Vamos verificar se existe uma coluna 'id' numérica oculta
-                            if isinstance(id_banco, str) and not id_banco.isdigit():
-                                 # Procure no seu banco se a coluna de ID tem outro nome, ex: 'id_seq'
-                                 # Se não tiver, o erro está na criação da tabela no Supabase.
-                                 st.error(f"⚠️ Erro Crítico: O sistema localizou o UID do usuário ({id_banco}) no lugar do ID da Ocorrência.")
-                                 st.info("Dica: Verifique se na sua tabela 'ocorrencias' a coluna ID é a primeira (Primary Key).")
-                                 st.stop()
+                            id_banco = None
+                            
+                            # 1. Tenta buscar por colunas que costumam ter o número sequencial
+                            for possivel_nome in ['id', 'id_ocorrencia', 'id_seq', 'n_registro']:
+                                valor = o.get(possivel_nome)
+                                # Se o valor for um número (ou string de número), esse é o nosso cara!
+                                if valor is not None and str(valor).isdigit():
+                                    id_banco = int(valor)
+                                    break
+                            
+                            # 2. Se ainda assim não achar o número, o app não pode tentar excluir
+                            if id_banco is None:
+                                st.error(f"❌ Não foi possível localizar o ID numérico da ocorrência {index}. O valor encontrado foi: {o.get('id')}")
+                                continue
                     
                             with st.container(border=True):
                                 c1, c2 = st.columns([0.8, 0.2])
                                 
-                                # Exibição do Card
-                                resumo = f"👤 **{o['solicitante']}**\n\n📅 {o['data']} | ID Ocorrência: {id_banco}"
+                                # Exibição do Card - Agora com o ID certo
+                                resumo = f"👤 **{o['solicitante']}**\n\n📅 {o['data']} | ID Real: {id_banco}"
                                 c1.markdown(resumo)
                     
-                                # --- Botão de Arquivar (Protegido) ---
-                                if c2.button("📦 Arquivar", key=f"arq_btn_{id_banco}"):
+                                # --- Botão de Arquivar ---
+                                if c2.button("📦 Arquivar", key=f"arq_v3_{id_banco}"):
                                     try:
-                                        # Garantimos que o ID enviado ao banco seja o número inteiro
-                                        supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", int(id_banco)).execute()
+                                        supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", id_banco).execute()
                                         st.session_state.db_ocorrencias = carregar_ocorrencias()
                                         st.rerun()
                                     except Exception as e:
-                                        st.error(f"Erro ao arquivar: {e}")
+                                        st.error(f"Erro no banco: {e}")
                     
-                                # --- Botão de Excluir (Protegido) ---
-                                if c2.button("🗑️ Excluir", key=f"exc_btn_{id_banco}"):
+                                # --- Botão de Excluir ---
+                                if c2.button("🗑️ Excluir", key=f"exc_v3_{id_banco}"):
                                     try:
-                                        supabase.table("ocorrencias").delete().eq("id", int(id_banco)).execute()
+                                        supabase.table("ocorrencias").delete().eq("id", id_banco).execute()
                                         st.session_state.db_ocorrencias = carregar_ocorrencias()
                                         st.rerun()
                                     except Exception as e:
-                                        st.error(f"Erro ao excluir: {e}")
+                                        st.error(f"Erro no banco: {e}")
                 else:
                     st.info("Sem registros no banco de dados.")
 
@@ -1219,6 +1224,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

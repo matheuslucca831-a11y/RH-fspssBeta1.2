@@ -641,24 +641,27 @@ if user['cargo'] == "Gestor Máximo":
                         st.error("❌ Erro ao excluir usuário")
                         st.write(e)
             
-            with t_vinc:
-                st.subheader("🏢 Gestão de Unidades e Equipes")
-            
-                # --- PARTE 1: Criar nova unidade ---
-                with st.expander("➕ Criar Nova Unidade/Setor", expanded=False):
-                    # Use uma key fixa e única (não repetir em outro lugar)
-                    with st.form("cadastro_unidade_form"):
-                        nova_unidade = st.text_input("Nome da Unidade (ex: USF Boiçucanga, Administrativo):")
-                        if st.form_submit_button("Cadastrar Unidade"):
-                            if nova_unidade:
-                                try:
-                                    supabase.table("unidades").insert({"nome": nova_unidade}).execute()
-                                    st.success("Unidade criada!")
-                                    st.session_state.rerun_needed = True
-                                except Exception as e:
-                                    st.error(f"Erro ao criar: {e}")
-                            else:
-                                st.warning("Digite um nome para a unidade.")
+    with t_vinc:
+        st.subheader("🏢 Gestão de Unidades e Equipes")
+    
+        # --- PARTE 1: Criar nova unidade ---
+        nova_unidade_key = f"cadastro_unidade_form_{st.session_state.get('form_counter', 0)}"
+        
+        with st.expander("➕ Criar Nova Unidade/Setor", expanded=False):
+            with st.form(nova_unidade_key):
+                nova_unidade = st.text_input("Nome da Unidade (ex: USF Boiçucanga, Administrativo):")
+                if st.form_submit_button("Cadastrar Unidade"):
+                    if nova_unidade:
+                        try:
+                            supabase.table("unidades").insert({"nome": nova_unidade}).execute()
+                            st.success("Unidade criada!")
+                            # Incrementa contador para próxima vez
+                            st.session_state["form_counter"] = st.session_state.get("form_counter", 0) + 1
+                            st.experimental_rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao criar: {e}")
+                    else:
+                        st.warning("Digite um nome para a unidade.")
     
         # --- Carrega unidades do banco ---
         res_unidades = supabase.table("unidades").select("*").execute()
@@ -1459,6 +1462,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

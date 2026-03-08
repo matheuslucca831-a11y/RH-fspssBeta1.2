@@ -949,7 +949,7 @@ else:
         pendentes = [
             o for o in st.session_state.db_ocorrencias 
             if o["status"] == "⏳ Pendente"
-            and o["email_solicitante"] in equipe_unidade
+            and o.get("unidade") == minha_unidade
             and o["email_solicitante"] != email_logado
         ]
         
@@ -1157,6 +1157,7 @@ else:
                     nova_ocorrencia = {
                         "solicitante": st.session_state.usuario_logado.get('nome'),
                         "email_solicitante": st.session_state.usuario_logado["email"],
+                        "unidade": st.session_state.usuario_logado.get("unidade"),  # ⭐ NOVO
                         "data": txt_data,
                         "motivo": motivo_final,
                         "status": "⏳ Pendente",
@@ -1269,6 +1270,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

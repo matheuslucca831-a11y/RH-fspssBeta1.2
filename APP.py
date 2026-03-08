@@ -133,6 +133,33 @@ st.session_state.db_usuarios = carregar_usuarios()
 def salvar_csv(nome_arquivo, dados):
     pd.DataFrame(dados).to_csv(nome_arquivo, index=False)
 
+def carregar_pendentes(unidade):
+    try:
+        res = supabase.table("ocorrencias") \
+            .select("*") \
+            .eq("status", "⏳ Pendente") \
+            .eq("unidade", unidade) \
+            .order("id", desc=True) \
+            .execute()
+
+        return res.data if res.data else []
+    except Exception as e:
+        st.error(f"Erro ao carregar pendentes: {e}")
+        return []
+
+def carregar_minhas_ocorrencias(email):
+    try:
+        res = supabase.table("ocorrencias") \
+            .select("*") \
+            .eq("email_solicitante", email) \
+            .order("id", desc=True) \
+            .execute()
+
+        return res.data if res.data else []
+    except Exception as e:
+        st.error(f"Erro ao carregar histórico: {e}")
+        return []
+
 
 
 
@@ -949,19 +976,18 @@ else:
     minha_unidade = user.get('unidade') # Pega a unidade salva no cadastro do líder
 
     if user['cargo'] in ["Enfermeiro", "Supervisor"]:
-        # 1. Descobrimos quem são os funcionários que pertencem à mesma unidade que o líder
-        equipe_unidade = [
-            u['email'] for u in st.session_state.db_usuarios 
-            if u.get('unidade') == minha_unidade
-        ]
+
         
         # 2. Filtramos as ocorrências: Devem ser "Pendentes" E o solicitante deve ser da unidade
-        pendentes = [
-            o for o in st.session_state.db_ocorrencias 
-            if o["status"] == "⏳ Pendente"
-            and o.get("unidade") == minha_unidade
-            and o["email_solicitante"] != email_logado
-        ]
+        res = supabase.table("ocorrencias") \
+            .select("*") \
+            .eq("status", "⏳ Pendente") \
+            .eq("unidade", minha_unidade) \
+            .neq("email_solicitante", email_logado) \
+            .order("id", desc=True) \
+            .execute()
+        
+        pendentes = res.data if res.data else []
         
         tab_aprov, tab_nova, tab_hist, tab_decididos = st.tabs([
             f"📋 Aprovações ({len(pendentes)})", "📝 Nova ocorrência", "📜 Meu Histórico", "✅ Minhas Decisões"
@@ -969,7 +995,13 @@ else:
         
     elif user['cargo'] == "Gestor Máximo":
         # O Gestor Máximo continua vendo TUDO que está com a direção, independente da unidade
-        pendentes = [o for o in st.session_state.db_ocorrencias if o["status"] == "⏳ Aguardando Direção"]
+        res = supabase.table("ocorrencias") \
+            .select("*") \
+            .eq("status", "⏳ Aguardando Direção") \
+            .order("id", desc=True) \
+            .execute()
+        
+        pendentes = res.data if res.data else []
         
         tab_aprov, tab_nova, tab_hist, tab_decididos = st.tabs([
             f"🏛️ Decisão Final ({len(pendentes)})", "📝 Nova ocorrência", "📜 Meu Histórico", "✅ Minhas Decisões"
@@ -1280,6 +1312,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

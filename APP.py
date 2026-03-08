@@ -12,6 +12,8 @@ import streamlit as st
 from supabase import create_client
 from passlib.hash import pbkdf2_sha256
 
+
+
 def remover_funcionario_da_unidade(email_func):
     lider_email = st.session_state.usuario_logado['email']
 
@@ -492,12 +494,13 @@ st.title(f"Olá, {user['nome']}!")
 # --------------------------------------------------
 if user['cargo'] == "Gestor Máximo":
     st.header("Painel Administrativo Central")
-    t_users, t_vinc, t_aprovar, t_hist, t_arq = st.tabs([
+    t_users, t_vinc, t_aprovar, t_hist, t_arq, t_rel = st.tabs([
         "👥 Equipe", 
         "🔗 Vínculos", 
-        "✅ Aprovar Folgas", # Nova aba dedicada
+        "✅ Aprovar Folgas",
         "📊 Monitoramento", 
-        "📦 Arquivo Morto"
+        "📦 Arquivo Morto",
+        "📈 Relatórios"
     ])
     with t_users:
         with st.expander("➕ Novo Usuário"):
@@ -983,6 +986,56 @@ if user['cargo'] == "Gestor Máximo":
         else:
             st.info("Sem registros no banco de dados.")
 
+
+    with t_rel:
+
+    st.subheader("📈 Relatório Mensal de Ocorrências")
+
+    if st.button("📊 Gerar relatório do mês"):
+
+        import datetime
+        from collections import Counter
+
+        mes_atual = datetime.datetime.now().month
+        ano_atual = datetime.datetime.now().year
+
+        ocorrencias = st.session_state.db_ocorrencias
+
+        ocorrencias_mes = []
+
+        for o in ocorrencias:
+            try:
+                data_oc = datetime.datetime.strptime(o["data"], "%Y-%m-%d")
+
+                if data_oc.month == mes_atual and data_oc.year == ano_atual:
+                    ocorrencias_mes.append(o)
+
+            except:
+                continue
+
+        total = len(ocorrencias_mes)
+
+        aprovadas = len([o for o in ocorrencias_mes if "Deferido" in o["status"]])
+        negadas = len([o for o in ocorrencias_mes if "Indeferido" in o["status"]])
+        pendentes = len([o for o in ocorrencias_mes if "Aguardando" in o["status"]])
+
+        st.markdown("### 📊 Resumo do mês")
+
+        c1, c2, c3, c4 = st.columns(4)
+
+        c1.metric("Total", total)
+        c2.metric("Aprovadas", aprovadas)
+        c3.metric("Negadas", negadas)
+        c4.metric("Pendentes", pendentes)
+
+        # relatório por unidade
+        contagem_unidade = Counter(o.get("unidade", "Sem unidade") for o in ocorrencias_mes)
+
+        st.markdown("### 🏢 Ocorrências por unidade")
+
+        for unidade, qtd in contagem_unidade.items():
+            st.write(f"**{unidade}** — {qtd}")
+
 # --------------------------------------------------
 # 6. VISÃO OPERACIONAL (ENFERMEIRO, SUPERVISOR, FUNCIONÁRIO)
 # --------------------------------------------------
@@ -1335,6 +1388,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

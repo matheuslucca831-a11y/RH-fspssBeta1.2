@@ -575,13 +575,13 @@ if user['cargo'] == "Gestor Máximo":
                 
                 col1, col2 = st.columns(2)
                 
-                edit_nome = col1.text_input("Nome", value=u["nome"], key=f"n_{u['email']}", disabled=not pode_editar)
+                edit_nome = col1.text_input("Nome", value=u["nome"], key=f"nome_edit_{u['id']}", disabled=not pode_editar)
                 
                 # Mostra apenas a parte da matrícula antes do @
                 matrícula_atual = u["email"].split("@")[0]
-                edit_matricula = col2.text_input("Matrícula", value=matrícula_atual, key=f"e_{u['email']}", disabled=not pode_editar)
+                edit_matricula = col2.text_input("Matrícula", value=matrícula_atual, key=f"mat_edit_{u['id']}", disabled=not pode_editar)
                 
-                edit_senha = col1.text_input("Alterar Senha (vazio para manter)", type="password", key=f"s_{u['email']}", disabled=not pode_editar)
+                edit_senha = col1.text_input("Alterar Senha", type="password", key=f"pass_edit_{u['id']}", disabled=not pode_editar)
                 
                 edit_cargo = col2.selectbox(
                     "Cargo",
@@ -614,10 +614,13 @@ if user['cargo'] == "Gestor Máximo":
                 
                         # 3. SINCRONIZA O LOGIN (O pulo do gato)
                         # Como o ID pode vir errado da tabela, buscamos o ID real no Auth pelo e-mail
-                        user_list = supabase_admin.auth.admin.list_users()
-                        # Procura o usuário no sistema de segurança que tem o e-mail antigo
-                        target_auth_user = next((user for user in user_list.users if user.email == email_referencia), None)
-                
+                        res_auth = supabase_admin.auth.admin.list_users()
+                        
+                        # Se res_auth for uma lista, usamos direto. Se for objeto, usamos .users
+                        users_data = res_auth if isinstance(res_auth, list) else res_auth.users
+                        
+                        target_auth_user = next((user for user in users_data if user.email == email_referencia), None)
+
                         if target_auth_user:
                             auth_updates = {"email": novo_email}
                             if edit_senha:
@@ -1456,6 +1459,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

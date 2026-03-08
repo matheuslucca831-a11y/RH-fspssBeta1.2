@@ -689,52 +689,73 @@ if user['cargo'] == "Gestor Máximo":
                             st.error(f"Erro ao salvar: {e}")
     
         # --- PARTE 3: Aba de pesquisa de unidades ---
+        # --- PARTE 3: Gestão visual das unidades ---
         st.markdown("---")
-        st.subheader("🔎 Pesquisar Unidades")
-    
-        pesquisa_unidade = st.text_input("Digite o nome da unidade para pesquisa", key="pesquisa_unidade")
-        unidades_filtradas_pesquisa = [u for u in unidades_db if pesquisa_unidade.lower() in u['nome'].lower()]
-    
-        # Variáveis de controle
-        if "funcionario_para_remover" not in st.session_state:
-            st.session_state.funcionario_para_remover = None
-            st.session_state.unidade_para_remover = None
-    
-        if unidades_filtradas_pesquisa:
-            for uni in unidades_filtradas_pesquisa:
-                with st.container(border=True):
-                    col_uni, col_del = st.columns([0.9, 0.1])
-                    with col_uni:
-                        st.markdown(f"### 📍 {uni['nome']}")
-                    with col_del:
-                        if st.button("🗑️", key=f"del_uni_{uni['id']}", help="Excluir Unidade"):
+        st.subheader("🏢 Unidades e Equipes")
+        
+        pesquisa_unidade = st.text_input("🔎 Buscar unidade", key="pesquisa_unidade")
+        
+        unidades_filtradas = [
+            u for u in unidades_db
+            if pesquisa_unidade.lower() in u["nome"].lower()
+        ]
+        
+        if unidades_filtradas:
+        
+            for uni in unidades_filtradas:
+        
+                membros = [
+                    u for u in st.session_state.db_usuarios
+                    if u.get("unidade") == uni["nome"]
+                ]
+        
+                # Expander da unidade
+                with st.expander(f"📍 {uni['nome']}  ({len(membros)} funcionários)"):
+        
+                    col_title, col_delete = st.columns([0.9, 0.1])
+        
+                    with col_delete:
+                        if st.button("🗑️ Excluir unidade", key=f"del_uni_{uni['id']}"):
                             try:
-                                # Deleta a unidade do banco
-                                supabase.table("unidades").delete().eq("id", uni['id']).execute()
-                                
-                                # Opcional: remove unidade dos usuários no cache
+                                supabase.table("unidades").delete().eq("id", uni["id"]).execute()
+        
                                 for u in st.session_state.db_usuarios:
-                                    if u.get("unidade") == uni['nome']:
+                                    if u.get("unidade") == uni["nome"]:
                                         u["unidade"] = None
-                                
-                                st.success(f"Unidade {uni['nome']} excluída com sucesso!")
+        
+                                st.success("Unidade excluída!")
                                 st.session_state.rerun_needed = True
+        
                             except Exception as e:
-                                st.error(f"Erro ao excluir unidade: {e}")
-                    membros = [u for u in st.session_state.db_usuarios if u.get('unidade') == uni['nome']]
-    
+                                st.error(f"Erro ao excluir: {e}")
+        
+                    st.markdown("---")
+        
                     if membros:
+        
                         for m in membros:
-                            cargo_emoji = "🩺" if m['cargo'] == "Enfermeiro" else "👤"
-                            col1, col2 = st.columns([0.9, 0.1])
+        
+                            cargo_emoji = "🩺" if m["cargo"] == "Enfermeiro" else "👤"
+        
+                            col1, col2 = st.columns([0.85, 0.15])
+        
                             with col1:
-                                st.write(f"{cargo_emoji} **{m['nome']}** ({m['cargo']})")
+                                st.write(
+                                    f"{cargo_emoji} **{m['nome']}** — {m['cargo']}"
+                                )
+        
                             with col2:
-                                if st.button("❌", key=f"remover_{uni['id']}_{m['email']}"):
-                                    st.session_state.funcionario_para_remover = m['email']
-                                    st.session_state.unidade_para_remover = uni['nome']
+                                if st.button(
+                                    "❌",
+                                    key=f"remover_{uni['id']}_{m['email']}",
+                                    help="Remover da unidade"
+                                ):
+                                    st.session_state.funcionario_para_remover = m["email"]
+                                    st.session_state.unidade_para_remover = uni["nome"]
+        
                     else:
-                        st.caption("Nenhum funcionário nesta unidade.")
+                        st.info("Nenhum funcionário nesta unidade.")
+        
         else:
             st.info("Nenhuma unidade encontrada.")
     
@@ -1312,6 +1333,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

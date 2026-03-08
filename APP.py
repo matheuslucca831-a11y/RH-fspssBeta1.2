@@ -591,44 +591,46 @@ if user['cargo'] == "Gestor Máximo":
     
                 btn_update, btn_delete = st.columns(2)
     
-                if btn_update.button("💾 Salvar Alterações", key=f"up_{u['email']}") and pode_editar:
-                    # Garante que a matrícula seja string para não dar erro de 'int'
-                    matricula_str = str(edit_matricula).strip()
-                    novo_email = f"{matricula_str}@rh12.com"
+                if btn_update.button("💾 Salvar Alterações", key=f"up_{u['email']}"):
+                    # --- 1. PREPARAÇÃO DOS DADOS (FORÇANDO STRING) ---
+                    matricula_limpa = str(edit_matricula).strip()
+                    novo_email = f"{matricula_limpa}@rh12.com"
                     email_antigo = str(u["email"])
                     
                     try:
-                        # Preparando os dados da tabela convertendo tudo para String
+                        # --- 2. ATUALIZAR O SISTEMA DE LOGIN (AUTH) ---
+                        # Nota: Você precisa do ID (UUID) do usuário que vem do Supabase
+                        user_id = u.get('id') 
+                        
+                        if user_id:
+                            auth_data = {"email": novo_email}
+                            if edit_senha:
+                                auth_data["password"] = str(edit_senha)
+                            
+                            # Isso atualiza o login real!
+                            supabase.auth.admin.update_user_by_id(user_id, attributes=auth_data)
+                
+                        # --- 3. ATUALIZAR A SUA TABELA DE VISUALIZAÇÃO ---
                         dados_tabela = {
                             "nome": str(edit_nome),
                             "email": novo_email,
                             "cargo": str(edit_cargo)
                         }
                         
-                        # Se houver nova senha, gera o hash (que é uma string)
                         if edit_senha:
+                            # Salva o hash para conferência interna se necessário
                             dados_tabela["matricula"] = gerar_hash(str(edit_senha))
                 
-                        # O erro costuma acontecer aqui ou no filtro .eq()
+                        # Atualiza a linha no banco usando o e-mail antigo como referência
                         supabase.table("usuarios").update(dados_tabela).eq("email", email_antigo).execute()
                         
+                        st.success("✅ Login e cadastro atualizados!")
                         st.session_state.db_usuarios = carregar_usuarios()
-                        st.success("Dados atualizados!")
                         st.rerun()
                 
                     except Exception as e:
-                        st.error(f"Erro ao sincronizar login: {e}")
-    
-                if btn_delete.button("🗑️ Excluir Conta", key=f"del_{u['email']}") and pode_editar:
-                    try:
-                        # Nota: Isso exclui da tabela, para excluir do AUTH requer permissões de Admin no Supabase
-                        supabase.table("usuarios").delete().eq("email", u["email"]).execute()
-                        st.session_state.db_usuarios = carregar_usuarios()
-                        st.warning("Usuário removido.")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Erro ao excluir: {e}")
-                
+                        st.error(f"Erro técnico: {e}")
+                                
     with t_vinc:
         st.subheader("🏢 Gestão de Unidades e Equipes")
     
@@ -1450,6 +1452,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

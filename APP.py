@@ -303,6 +303,10 @@ if not st.session_state.autenticado:
             
                 try:
                     # 1️⃣ Autentica no Supabase
+                    # --- Debug: Mostrar valores de login ---
+                    st.write("🔹 Tentando login com:")
+                    st.write("Email:", email_login)
+                    st.write("Senha digitada:", s_in)  # só para desenvolvimento, nunca em produção
                     auth_resposta = supabase.auth.sign_in_with_password({
                         "email": email_login,
                         "password": senha_login
@@ -1127,6 +1131,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

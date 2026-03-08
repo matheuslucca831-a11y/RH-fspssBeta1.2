@@ -531,7 +531,7 @@ if user['cargo'] == "Gestor Máximo":
                 n_e = c1.text_input("Matrícula")
                 n_c = c2.selectbox("Cargo", ["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"])
     
-                if st.form_submit_button("Salvar"):
+                   if st.form_submit_button("Salvar"):
                     if len(str(n_m).strip()) < 6:
                         st.error("🔒 A senha deve ter no mínimo 6 caracteres.")
                     elif not n_e or not n_n:
@@ -539,13 +539,13 @@ if user['cargo'] == "Gestor Máximo":
                     else:
                         email_interno = f"{n_e}@rh12.com"
                         try:
-                            # Cria usuário via Admin API
-                            user_auth = supabase.auth.admin.create_user({
+                            # CRIA USUÁRIO COM CLIENT ADMIN
+                            user_auth = supabase_admin.auth.admin.create_user({
                                 "email": email_interno,
                                 "password": n_m,
                                 "email_confirm": True
                             })
-    
+                
                             # Salva no banco com id_auth correto
                             novo_usuario = {
                                 "email": email_interno,
@@ -558,7 +558,7 @@ if user['cargo'] == "Gestor Máximo":
                             st.session_state.db_usuarios = carregar_usuarios()
                             st.success(f"Usuário {n_n} cadastrado!")
                             st.rerun()
-    
+                
                         except Exception as e:
                             st.error("❌ Erro ao criar usuário")
                             st.write(e)
@@ -1462,6 +1462,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

@@ -592,37 +592,28 @@ if user['cargo'] == "Gestor Máximo":
                 btn_update, btn_delete = st.columns(2)
     
                 if btn_update.button("💾 Salvar Alterações", key=f"up_{u['email']}") and pode_editar:
-                    novo_email = f"{edit_matricula}@rh12.com"
-                    email_antigo = u["email"]
+                    # Garante que a matrícula seja string para não dar erro de 'int'
+                    matricula_str = str(edit_matricula).strip()
+                    novo_email = f"{matricula_str}@rh12.com"
+                    email_antigo = str(u["email"])
                     
                     try:
-                        # 1. ATUALIZAR O AUTH (O que permite o login funcionar)
-                        # Nota: Para alterar dados de OUTROS usuários, o Supabase exige a Service Role Key
-                        # Se estiver usando a chave comum, o usuário só consegue alterar a própria senha.
-                        
-                        dados_auth = {"email": novo_email}
-                        if edit_senha:
-                            dados_auth["password"] = edit_senha
-                            
-                        # Tenta atualizar o Auth primeiro
-                        supabase.auth.admin.update_user_by_id(
-                            u['id'], # Você precisa ter a coluna 'id' (uuid) na sua tabela usuarios
-                            attributes=dados_auth
-                        )
-                
-                        # 2. ATUALIZAR A TABELA PÚBLICA (Para visualização no App)
+                        # Preparando os dados da tabela convertendo tudo para String
                         dados_tabela = {
-                            "nome": edit_nome,
+                            "nome": str(edit_nome),
                             "email": novo_email,
-                            "cargo": edit_cargo
+                            "cargo": str(edit_cargo)
                         }
+                        
+                        # Se houver nova senha, gera o hash (que é uma string)
                         if edit_senha:
-                            dados_tabela["matricula"] = gerar_hash(edit_senha)
+                            dados_tabela["matricula"] = gerar_hash(str(edit_senha))
                 
+                        # O erro costuma acontecer aqui ou no filtro .eq()
                         supabase.table("usuarios").update(dados_tabela).eq("email", email_antigo).execute()
                         
                         st.session_state.db_usuarios = carregar_usuarios()
-                        st.success("Login e Dados atualizados com sucesso!")
+                        st.success("Dados atualizados!")
                         st.rerun()
                 
                     except Exception as e:
@@ -1459,6 +1450,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

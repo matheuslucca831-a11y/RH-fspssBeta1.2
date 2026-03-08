@@ -1016,7 +1016,7 @@ else:
             f"📋 Aprovações ({len(pendentes)})", "📝 Nova ocorrência", "📜 Meu Histórico", "✅ Minhas Decisões"
         ])
         
-    elif user['cargo'] == "Gestor Máximo":
+    elif user['cargo'] == "Gestor":
         # O Gestor Máximo continua vendo TUDO que está com a direção, independente da unidade
         res = supabase.table("ocorrencias") \
             .select("*") \
@@ -1335,6 +1335,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

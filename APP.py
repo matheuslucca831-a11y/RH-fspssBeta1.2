@@ -800,8 +800,12 @@ if user['cargo'] == "Gestor Máximo":
                     st.caption(f"🔢 {len(df_filtrado)} registros encontrados")
                     
                     for _, o in df_filtrado.iterrows():
-                        # Garantia do ID como inteiro para o Supabase
-                        id_real = int(o['id']) 
+                    
+                        # Garantia segura do ID
+                        try:
+                            id_real = int(o.get("id", 0))
+                        except (ValueError, TypeError):
+                            continue
                         
                         with st.container(border=True):
                             col_info, col_acao = st.columns([0.8, 0.2])
@@ -1236,6 +1240,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

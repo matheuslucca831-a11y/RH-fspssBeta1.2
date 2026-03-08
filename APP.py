@@ -518,26 +518,22 @@ if user['cargo'] == "Gestor Máximo":
         "📈 Relatórios"
     ])
     with t_users:
-        from utils import gerar_hash, carregar_usuarios  # Seu código de hash e carregamento
-    
-        # --- INICIALIZAÇÃO DO SUPABASE COM SERVICE_ROLE KEY ---
-        SUPABASE_URL = "https://<SEU-PROJETO>.supabase.co"
-        SUPABASE_SERVICE_KEY = "<SUA_SERVICE_ROLE_KEY>"  # ⚠️ Mantenha em segredo!
-        supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-    
-        # --- CARREGA USUÁRIOS ---
+        # Usa o supabase global que você já criou no APP
+        # Não precisa importar utils nem criar outro client
+        
+        # Carrega usuários da tabela
         st.session_state.db_usuarios = carregar_usuarios() if "db_usuarios" not in st.session_state else st.session_state.db_usuarios
         email_logado = st.session_state.usuario_logado['email']
-    
-        # --- CADASTRO DE NOVO USUÁRIO ---
+
+        # ------------------ CADASTRO DE NOVO USUÁRIO ------------------
         with st.expander("➕ Novo Usuário"):
             with st.form("cad_u", clear_on_submit=True):
                 c1, c2 = st.columns(2)
                 n_n = c1.text_input("Nome")
-                n_m = c2.text_input("Senha")
+                n_m = c2.text_input("Senha", type="password")
                 n_e = c1.text_input("Matrícula")
                 n_c = c2.selectbox("Cargo", ["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"])
-    
+
                 if st.form_submit_button("Salvar"):
                     if len(str(n_m).strip()) < 6:
                         st.error("🔒 A senha deve ter no mínimo 6 caracteres.")
@@ -552,33 +548,34 @@ if user['cargo'] == "Gestor Máximo":
                                 "password": n_m,
                                 "email_confirm": True
                             })
-    
-                            # Salva no banco com id_auth
+
+                            # Salva no banco com id_auth correto
                             novo_usuario = {
                                 "email": email_interno,
                                 "nome": n_n,
                                 "cargo": n_c,
                                 "matricula": gerar_hash(str(n_m)),
-                                "id_auth": user_auth["id"]
+                                "id_auth": user_auth.user.id  # <- aqui pegamos o ID correto
                             }
                             supabase.table("usuarios").insert(novo_usuario).execute()
                             st.session_state.db_usuarios = carregar_usuarios()
                             st.success(f"Usuário {n_n} cadastrado!")
                             st.rerun()
-    
+
                         except Exception as e:
                             st.error("❌ Erro ao criar usuário")
                             st.write(e)
-    
-        # --- LISTA E EDIÇÃO DE USUÁRIOS ---
+
+        # ------------------ LISTA E EDIÇÃO DE USUÁRIOS ------------------
         busca = st.text_input("🔍 Pesquisar usuários")
         for u in [u for u in st.session_state.db_usuarios if busca.lower() in u['nome'].lower() or busca in str(u.get('matricula', ''))]:
             if u['email'] == email_logado:
                 continue
+
             with st.expander(f"👤 {u['nome']} ({u['cargo']})"):
                 pode_editar = st.session_state.usuario_logado["cargo"] == "Gestor Máximo"
                 col1, col2 = st.columns(2)
-    
+
                 # Campos editáveis
                 novo_nome = col1.text_input("Nome", value=u["nome"], key=f"n_{u['email']}", disabled=not pode_editar)
                 nova_matricula_login = col2.text_input("Matrícula (Login)", value=u["email"].split("@")[0], key=f"e_{u['email']}", disabled=not pode_editar)
@@ -586,23 +583,22 @@ if user['cargo'] == "Gestor Máximo":
                 novo_cargo = col2.selectbox("Cargo", ["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"],
                                             index=["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"].index(u['cargo']),
                                             key=f"c_{u['email']}", disabled=not pode_editar)
-    
-                c1, c2 = st.columns(2)
-    
-                # --- Atualizar usuário ---
-                if c1.button("💾 Atualizar", key=f"up_{u['email']}") and pode_editar:
+
+                c1_btn, c2_btn = st.columns(2)
+
+                # Atualizar usuário
+                if c1_btn.button("💾 Atualizar", key=f"up_{u['email']}") and pode_editar:
                     try:
-                        # Atualiza no Auth apenas se houver mudança de email ou senha
                         update_data = {}
                         novo_email_completo = f"{nova_matricula_login}@rh12.com"
                         if novo_email_completo != u['email']:
                             update_data["email"] = novo_email_completo
                         if nova_senha:
                             update_data["password"] = nova_senha
-    
-                        if update_data:
+
+                        if update_data and u.get("id_auth"):
                             supabase.auth.admin.update_user(u["id_auth"], update_data)
-    
+
                         # Atualiza no banco
                         supabase.table("usuarios").update({
                             "nome": novo_nome,
@@ -610,22 +606,20 @@ if user['cargo'] == "Gestor Máximo":
                             "cargo": novo_cargo,
                             "matricula": gerar_hash(nova_senha) if nova_senha else u["matricula"]
                         }).eq("id", u["id"]).execute()
-    
+
                         st.session_state.db_usuarios = carregar_usuarios()
                         st.success("Usuário atualizado!")
                         st.rerun()
-    
+
                     except Exception as e:
                         st.error("❌ Erro ao atualizar usuário")
                         st.write(e)
-    
-                # --- Excluir usuário ---
-                if c2.button("🗑️ Excluir", key=f"del_{u['email']}") and pode_editar:
+
+                # Excluir usuário
+                if c2_btn.button("🗑️ Excluir", key=f"del_{u['email']}") and pode_editar:
                     try:
-                        # Remove do Auth
                         if u.get("id_auth"):
                             supabase.auth.admin.delete_user(u["id_auth"])
-                        # Remove do banco
                         supabase.table("usuarios").delete().eq("id", u["id"]).execute()
                         st.session_state.db_usuarios = carregar_usuarios()
                         st.success("Usuário excluído!")
@@ -1452,6 +1446,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

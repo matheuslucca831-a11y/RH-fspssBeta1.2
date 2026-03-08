@@ -15,20 +15,20 @@ from passlib.hash import pbkdf2_sha256
 def remover_funcionario_da_unidade(email_func):
     lider_email = st.session_state.usuario_logado['email']
 
-    # 1. Remove vínculo lider-liderado
+    # Remove vínculo lider-liderado
     supabase.table("vinculos")\
         .delete()\
         .eq("lider", lider_email)\
         .eq("liderado", email_func)\
         .execute()
 
-    # 2. Atualiza unidade do usuário para nulo
+    # Atualiza unidade do usuário para nulo
     supabase.table("usuarios")\
         .update({"unidade": None})\
         .eq("email", email_func)\
         .execute()
 
-    # 3. Atualiza memória local para refletir a mudança
+    # Atualiza memória local para refletir a mudança
     for u in st.session_state.db_usuarios:
         if u['email'] == email_func:
             u['unidade'] = None
@@ -531,8 +531,8 @@ if user['cargo'] == "Gestor Máximo":
 
     with t_vinc:
         st.subheader("🏢 Gestão de Unidades e Equipes")
-        
-        # --- PARTE 1: CRIAR NOVA UNIDADE ---
+    
+        # --- PARTE 1: Criar nova unidade ---
         with st.expander("➕ Criar Nova Unidade/Setor", expanded=False):
             with st.form("form_unidade"):
                 nova_unidade = st.text_input("Nome da Unidade (ex: USF Boiçucanga, Administrativo):")
@@ -541,12 +541,12 @@ if user['cargo'] == "Gestor Máximo":
                         try:
                             supabase.table("unidades").insert({"nome": nova_unidade}).execute()
                             st.success("Unidade criada!")
-                            st.rerun()
+                            st.experimental_rerun()
                         except Exception as e:
                             st.error(f"Erro ao criar: {e}")
                     else:
                         st.warning("Digite um nome para a unidade.")
-        
+    
         # --- Carrega unidades do banco ---
         res_unidades = supabase.table("unidades").select("*").execute()
         unidades_db = res_unidades.data if res_unidades.data else []
@@ -554,72 +554,73 @@ if user['cargo'] == "Gestor Máximo":
         if not unidades_db:
             st.warning("Nenhuma unidade cadastrada.")
         else:
-            st.write("---")
-            st.markdown("### 🔗 Vincular Funcionários")
-            
-            with st.container(border=True):
-                c1, c2 = st.columns(2)
-                u_unidade = c1.selectbox("Selecione a Unidade:", [uni['nome'] for uni in unidades_db])
-                
+            # --- Pesquisa / filtro para unidades ---
+            filtro_unidade = st.text_input("🔍 Buscar Unidade")
+    
+            # Filtra unidades pelo filtro (case insensitive)
+            unidades_filtradas = [u for u in unidades_db if filtro_unidade.lower() in u['nome'].lower()]
+    
+            # Selectbox para escolher a unidade filtrada
+            unidade_selecionada = st.selectbox(
+                "Selecione a Unidade:",
+                unidades_filtradas,
+                format_func=lambda x: x['nome'] if x else "Nenhuma unidade"
+            ) if unidades_filtradas else None
+    
+            # --- Vincular funcionários ---
+            if unidade_selecionada:
+                st.markdown("---")
+                st.markdown(f"### 🔗 Vincular Funcionários à unidade {unidade_selecionada['nome']}")
+    
                 todos_users = [u['email'] for u in st.session_state.db_usuarios]
-                u_func = c2.multiselect(
-                    "Selecionar Funcionários:", 
-                    todos_users, 
+                u_func = st.multiselect(
+                    "Selecionar Funcionários:",
+                    todos_users,
                     format_func=lambda x: next(u['nome'] for u in st.session_state.db_usuarios if u['email'] == x)
                 )
-                
+    
                 if st.button("Confirmar Alocação na Unidade", use_container_width=True):
                     if not u_func:
                         st.warning("Selecione pelo menos um funcionário.")
                     else:
                         try:
                             lider_email = st.session_state.usuario_logado['email']
-    
                             for email in u_func:
                                 supabase.table("vinculos").insert({
                                     "lider": lider_email,
                                     "liderado": email
                                 }).execute()
-    
                                 supabase.table("usuarios").update({
-                                    "unidade": u_unidade
+                                    "unidade": unidade_selecionada['nome']
                                 }).eq("email", email).execute()
     
                             for u in st.session_state.db_usuarios:
                                 if u['email'] in u_func:
-                                    u['unidade'] = u_unidade
+                                    u['unidade'] = unidade_selecionada['nome']
     
-                            st.success(f"Equipe vinculada à unidade {u_unidade}!")
-                            st.rerun()
+                            st.success(f"Equipe vinculada à unidade {unidade_selecionada['nome']}!")
+                            st.experimental_rerun()
                         except Exception as e:
                             st.error(f"Erro ao vincular funcionários: {e}")
-            
-            # --- PARTE 3: VISUALIZAÇÃO POR UNIDADE COM BOTÃO DE REMOVER ---
-            st.write("---")
-            for uni in unidades_db:
-                with st.container(border=True):
-                    membros = [u for u in st.session_state.db_usuarios if u.get('unidade') == uni['nome']]
-                    
-                    col_u, col_exc = st.columns([0.8, 0.2])
-                    col_u.markdown(f"### 📍 {uni['nome']}")
-                    
-                    if col_exc.button("🗑️", key=f"del_uni_{uni['id']}", help="Excluir Unidade"):
-                        supabase.table("unidades").delete().eq("id", uni['id']).execute()
-                        st.rerun()
-                    
-                    if membros:
-                        for m in membros:
-                            cargo_emoji = "🩺" if m['cargo'] == "Enfermeiro" else "👤"
-                            col1, col2 = st.columns([0.9, 0.1])
-                            with col1:
-                                st.write(f"{cargo_emoji} **{m['nome']}** ({m['cargo']})")
-                            with col2:
-                                if st.button("❌", key=f"remover_{m['email']}", help="Remover funcionário da unidade"):
-                                    remover_funcionario_da_unidade(m['email'])
-                                    st.success(f"{m['nome']} removido da unidade.")
-                                    st.rerun()
-                    else:
-                        st.caption("Nenhum funcionário nesta unidade.")
+    
+                # --- Mostrar funcionários da unidade selecionada ---
+                st.markdown("---")
+                st.markdown(f"### 👥 Funcionários na unidade {unidade_selecionada['nome']}")
+    
+                membros = [u for u in st.session_state.db_usuarios if u.get('unidade') == unidade_selecionada['nome']]
+                if membros:
+                    for m in membros:
+                        cargo_emoji = "🩺" if m['cargo'] == "Enfermeiro" else "👤"
+                        col1, col2 = st.columns([0.9, 0.1])
+                        with col1:
+                            st.write(f"{cargo_emoji} **{m['nome']}** ({m['cargo']})")
+                        with col2:
+                            if st.button("❌", key=f"remover_{m['email']}", help="Remover funcionário da unidade"):
+                                remover_funcionario_da_unidade(m['email'])
+                                st.success(f"{m['nome']} removido da unidade.")
+                                st.experimental_rerun()
+                else:
+                    st.caption("Nenhum funcionário nesta unidade.")
 
     with t_aprovar:
     
@@ -1178,6 +1179,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

@@ -137,10 +137,14 @@ cookies = EncryptedCookieManager(
 if not cookies.ready():
     st.stop()
 
-# Inicializa session_state
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
+
+if "usuario_logado" not in st.session_state:
     st.session_state.usuario_logado = None
+
+if "db_ocorrencias" not in st.session_state:
+    st.session_state.db_ocorrencias = []
 
 
 # ----------------------------------------------
@@ -1240,6 +1244,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

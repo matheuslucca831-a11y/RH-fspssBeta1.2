@@ -710,27 +710,29 @@ if user['cargo'] == "Gestor Máximo":
                 ]
         
                 # Expander da unidade
-                with st.expander(f"📍 {uni['nome']}  ({len(membros)} funcionários)"):
-        
-                    col_title, col_delete = st.columns([0.9, 0.1])
-        
-                    with col_delete:
-                        if st.button("🗑️ Excluir unidade", key=f"del_uni_{uni['id']}"):
-                            try:
-                                supabase.table("unidades").delete().eq("id", uni["id"]).execute()
-        
-                                for u in st.session_state.db_usuarios:
-                                    if u.get("unidade") == uni["nome"]:
-                                        u["unidade"] = None
-        
-                                st.success("Unidade excluída!")
-                                st.session_state.rerun_needed = True
-        
-                            except Exception as e:
-                                st.error(f"Erro ao excluir: {e}")
-        
+                col_nome, col_del = st.columns([0.9, 0.1])
+                
+                with col_nome:
+                    exp = st.expander(f"📍 {uni['nome']} ({len(membros)} funcionários)")
+                
+                with col_del:
+                    if st.button("🗑️", key=f"del_uni_{uni['id']}", help="Excluir unidade"):
+                        try:
+                            supabase.table("unidades").delete().eq("id", uni["id"]).execute()
+                
+                            for u in st.session_state.db_usuarios:
+                                if u.get("unidade") == uni["nome"]:
+                                    u["unidade"] = None
+                
+                            st.success("Unidade excluída!")
+                            st.session_state.rerun_needed = True
+                
+                        except Exception as e:
+                            st.error(f"Erro ao excluir: {e}")
+                
+                with exp:
                     st.markdown("---")
-        
+                        
                     if membros:
         
                         for m in membros:
@@ -1333,6 +1335,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

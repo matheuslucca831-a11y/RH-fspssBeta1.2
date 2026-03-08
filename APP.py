@@ -54,11 +54,19 @@ def carregar_vinculos():
         return {}
 def carregar_ocorrencias():
     try:
-        # .order("id", desc=True) faz com que a última cadastrada apareça primeiro
         res = supabase.table("ocorrencias").select("*").order("id", desc=True).execute()
-        
-        # Garante que retorne uma lista vazia se não houver dados, evitando erros de loop
-        return res.data if res.data else []
+
+        dados = res.data if res.data else []
+
+        # garante que id sempre seja inteiro
+        for o in dados:
+            try:
+                o["id"] = int(o.get("id", 0))
+            except:
+                o["id"] = 0
+
+        return dados
+
     except Exception as e:
         st.error(f"Erro ao carregar ocorrências do banco: {e}")
         return []
@@ -1270,6 +1278,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

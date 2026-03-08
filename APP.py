@@ -530,7 +530,7 @@ if user['cargo'] == "Gestor Máximo":
                         st.error("Erro ao excluir usuário")
 
 
-
+    
     with t_vinc:
         st.subheader("🏢 Gestão de Unidades e Equipes")
     
@@ -542,70 +542,71 @@ if user['cargo'] == "Gestor Máximo":
                     if nova_unidade:
                         try:
                             supabase.table("unidades").insert({"nome": nova_unidade}).execute()
-                            st.success("✅ Unidade criada!")
+                            st.success("Unidade criada!")
+                            # Marcar rerun seguro
                             st.session_state.rerun_needed = True
                         except Exception as e:
-                            st.error(f"❌ Erro ao criar: {e}")
+                            st.error(f"Erro ao criar: {e}")
                     else:
-                        st.warning("⚠️ Digite um nome para a unidade.")
+                        st.warning("Digite um nome para a unidade.")
     
-        # --- PARTE 2: Carrega unidades ---
-              # --- Carrega unidades do banco ---
-                res_unidades = supabase.table("unidades").select("*").execute()
-                unidades_db = res_unidades.data if res_unidades.data else []
-            
-                if unidades_db:
-                    st.markdown("---")
-                    st.markdown("### 🔗 Alocar Funcionários em Unidade")
-            
-                    nomes_unidades = [u['nome'] for u in unidades_db]
-                    unidade_nome_sel = st.selectbox("Selecione a Unidade destino:", [""] + nomes_unidades)
-            
-                    unidade_selecionada = next((u for u in unidades_db if u['nome'] == unidade_nome_sel), None)
-            
-                    if unidade_selecionada:
-                        st.markdown(f"#### 👥 Equipe para: {unidade_selecionada['nome']}")
-            
-                        todos_users = [u['email'] for u in st.session_state.db_usuarios]
-            
-                        u_func = st.multiselect(
-                            "Selecionar Funcionários para alocar:",
-                            todos_users,
-                            format_func=lambda x: next(u['nome'] for u in st.session_state.db_usuarios if u['email'] == x)
-                        )
-            
-                        if st.button("🚀 Confirmar Alocação", use_container_width=True):
-                            if not u_func:
-                                st.warning("Selecione pelo menos um funcionário.")
-                            else:
-                                try:
-                                    lider_email = st.session_state.usuario_logado['email']
-                                    for email in u_func:
-                                        supabase.table("vinculos").insert({
-                                            "lider": lider_email,
-                                            "liderado": email
-                                        }).execute()
-            
-                                        supabase.table("usuarios").update({
-                                            "unidade": unidade_selecionada['nome']
-                                        }).eq("email", email).execute()
-            
-                                    for u in st.session_state.db_usuarios:
-                                        if u['email'] in u_func:
-                                            u['unidade'] = unidade_selecionada['nome']
-            
-                                    st.success(f"Funcionários alocados com sucesso em {unidade_selecionada['nome']}!")
-                                    st.session_state.rerun_needed = True
-                                except Exception as e:
-                                    st.error(f"Erro ao salvar: {e}")
+        # --- Carrega unidades do banco ---
+        res_unidades = supabase.table("unidades").select("*").execute()
+        unidades_db = res_unidades.data if res_unidades.data else []
     
-        # --- PARTE 3: Aba de pesquisa de unidades e remoção de funcionários ---
+        if unidades_db:
+            st.markdown("---")
+            st.markdown("### 🔗 Alocar Funcionários em Unidade")
+    
+            nomes_unidades = [u['nome'] for u in unidades_db]
+            unidade_nome_sel = st.selectbox("Selecione a Unidade destino:", [""] + nomes_unidades)
+    
+            unidade_selecionada = next((u for u in unidades_db if u['nome'] == unidade_nome_sel), None)
+    
+            if unidade_selecionada:
+                st.markdown(f"#### 👥 Equipe para: {unidade_selecionada['nome']}")
+    
+                todos_users = [u['email'] for u in st.session_state.db_usuarios]
+    
+                u_func = st.multiselect(
+                    "Selecionar Funcionários para alocar:",
+                    todos_users,
+                    format_func=lambda x: next(u['nome'] for u in st.session_state.db_usuarios if u['email'] == x)
+                )
+    
+                if st.button("🚀 Confirmar Alocação", use_container_width=True):
+                    if not u_func:
+                        st.warning("Selecione pelo menos um funcionário.")
+                    else:
+                        try:
+                            lider_email = st.session_state.usuario_logado['email']
+                            for email in u_func:
+                                supabase.table("vinculos").insert({
+                                    "lider": lider_email,
+                                    "liderado": email
+                                }).execute()
+    
+                                supabase.table("usuarios").update({
+                                    "unidade": unidade_selecionada['nome']
+                                }).eq("email", email).execute()
+    
+                            for u in st.session_state.db_usuarios:
+                                if u['email'] in u_func:
+                                    u['unidade'] = unidade_selecionada['nome']
+    
+                            st.success(f"Funcionários alocados com sucesso em {unidade_selecionada['nome']}!")
+                            st.session_state.rerun_needed = True
+                        except Exception as e:
+                            st.error(f"Erro ao salvar: {e}")
+    
+        # --- PARTE 3: Aba de pesquisa de unidades ---
         st.markdown("---")
         st.subheader("🔎 Pesquisar Unidades")
     
         pesquisa_unidade = st.text_input("Digite o nome da unidade para pesquisa", key="pesquisa_unidade")
         unidades_filtradas_pesquisa = [u for u in unidades_db if pesquisa_unidade.lower() in u['nome'].lower()]
     
+        # Variáveis de controle
         if "funcionario_para_remover" not in st.session_state:
             st.session_state.funcionario_para_remover = None
             st.session_state.unidade_para_remover = None
@@ -631,15 +632,19 @@ if user['cargo'] == "Gestor Máximo":
         else:
             st.info("Nenhuma unidade encontrada.")
     
-    # --- Executa remoção de funcionário fora do loop ---
+    # --- Executa ações e rerun fora de loops e containers ---
     if st.session_state.funcionario_para_remover:
         remover_funcionario_da_unidade(st.session_state.funcionario_para_remover)
         st.success(f"{st.session_state.funcionario_para_remover} removido da unidade {st.session_state.unidade_para_remover}.")
+    
+        # Limpa flags
         st.session_state.funcionario_para_remover = None
         st.session_state.unidade_para_remover = None
-        st.session_state.rerun_needed = True
     
-    # --- Chama rerun seguro uma vez ---
+        # Chama rerun seguro
+        st.experimental_rerun()
+    
+    # --- Rerun seguro para criação/alocação ---
     if st.session_state.get("rerun_needed", False):
         st.session_state["rerun_needed"] = False
         st.rerun()  # <--- MUDOU AQUI!
@@ -1201,6 +1206,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

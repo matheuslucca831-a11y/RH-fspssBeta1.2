@@ -554,24 +554,32 @@ if user['cargo'] == "Gestor Máximo":
         if not unidades_db:
             st.warning("Nenhuma unidade cadastrada.")
         else:
-            # --- Pesquisa / filtro para unidades ---
-            filtro_unidade = st.text_input("🔍 Buscar Unidade")
+            st.markdown("---")
+            st.markdown("### 🔍 Buscar e Selecionar Unidade")
     
-            # Filtra unidades pelo filtro (case insensitive)
+            # Campo de busca
+            filtro_unidade = st.text_input("Digite o nome da unidade para buscar")
+    
+            # Filtra unidades em tempo real
             unidades_filtradas = [u for u in unidades_db if filtro_unidade.lower() in u['nome'].lower()]
     
-            # Selectbox para escolher a unidade filtrada
-            unidade_selecionada = st.selectbox(
-                "Selecione a Unidade:",
-                unidades_filtradas,
-                format_func=lambda x: x['nome'] if x else "Nenhuma unidade"
-            ) if unidades_filtradas else None
+            unidade_selecionada = None
+            if unidades_filtradas:
+                st.markdown("**Resultados encontrados:**")
+                for uni in unidades_filtradas:
+                    if st.button(uni['nome'], key=f"select_{uni['id']}"):
+                        st.session_state['unidade_selecionada'] = uni
+                        unidade_selecionada = uni
+            else:
+                st.caption("Nenhuma unidade encontrada.")
+    
+            # Recupera unidade selecionada da sessão se já tiver sido clicada
+            if 'unidade_selecionada' in st.session_state:
+                unidade_selecionada = st.session_state['unidade_selecionada']
     
             # --- Vincular funcionários ---
             if unidade_selecionada:
-                st.markdown("---")
                 st.markdown(f"### 🔗 Vincular Funcionários à unidade {unidade_selecionada['nome']}")
-    
                 todos_users = [u['email'] for u in st.session_state.db_usuarios]
                 u_func = st.multiselect(
                     "Selecionar Funcionários:",
@@ -579,7 +587,7 @@ if user['cargo'] == "Gestor Máximo":
                     format_func=lambda x: next(u['nome'] for u in st.session_state.db_usuarios if u['email'] == x)
                 )
     
-                if st.button("Confirmar Alocação na Unidade", use_container_width=True):
+                if st.button("Confirmar Alocação", use_container_width=True):
                     if not u_func:
                         st.warning("Selecione pelo menos um funcionário.")
                     else:
@@ -594,6 +602,7 @@ if user['cargo'] == "Gestor Máximo":
                                     "unidade": unidade_selecionada['nome']
                                 }).eq("email", email).execute()
     
+                            # Atualiza memória local
                             for u in st.session_state.db_usuarios:
                                 if u['email'] in u_func:
                                     u['unidade'] = unidade_selecionada['nome']
@@ -606,8 +615,8 @@ if user['cargo'] == "Gestor Máximo":
                 # --- Mostrar funcionários da unidade selecionada ---
                 st.markdown("---")
                 st.markdown(f"### 👥 Funcionários na unidade {unidade_selecionada['nome']}")
-    
                 membros = [u for u in st.session_state.db_usuarios if u.get('unidade') == unidade_selecionada['nome']]
+    
                 if membros:
                     for m in membros:
                         cargo_emoji = "🩺" if m['cargo'] == "Enfermeiro" else "👤"
@@ -621,7 +630,7 @@ if user['cargo'] == "Gestor Máximo":
                                 st.experimental_rerun()
                 else:
                     st.caption("Nenhum funcionário nesta unidade.")
-
+                
     with t_aprovar:
     
         st.subheader("⚖️ Despacho de Folgas e Abonos")
@@ -1179,6 +1188,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

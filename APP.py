@@ -519,12 +519,9 @@ if user['cargo'] == "Gestor Máximo":
     ])
     with t_users:
         # Usa o supabase global que você já criou no APP
-        # Não precisa importar utils nem criar outro client
-        
-        # Carrega usuários da tabela
         st.session_state.db_usuarios = carregar_usuarios() if "db_usuarios" not in st.session_state else st.session_state.db_usuarios
         email_logado = st.session_state.usuario_logado['email']
-
+    
         # ------------------ CADASTRO DE NOVO USUÁRIO ------------------
         with st.expander("➕ Novo Usuário"):
             with st.form("cad_u", clear_on_submit=True):
@@ -533,7 +530,7 @@ if user['cargo'] == "Gestor Máximo":
                 n_m = c2.text_input("Senha", type="password")
                 n_e = c1.text_input("Matrícula")
                 n_c = c2.selectbox("Cargo", ["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"])
-
+    
                 if st.form_submit_button("Salvar"):
                     if len(str(n_m).strip()) < 6:
                         st.error("🔒 A senha deve ter no mínimo 6 caracteres.")
@@ -548,44 +545,61 @@ if user['cargo'] == "Gestor Máximo":
                                 "password": n_m,
                                 "email_confirm": True
                             })
-
+    
                             # Salva no banco com id_auth correto
                             novo_usuario = {
                                 "email": email_interno,
                                 "nome": n_n,
                                 "cargo": n_c,
                                 "matricula": gerar_hash(str(n_m)),
-                                "id_auth": user_auth.user.id  # <- aqui pegamos o ID correto
+                                "id_auth": user_auth.user.id
                             }
                             supabase.table("usuarios").insert(novo_usuario).execute()
                             st.session_state.db_usuarios = carregar_usuarios()
                             st.success(f"Usuário {n_n} cadastrado!")
                             st.rerun()
-
+    
                         except Exception as e:
                             st.error("❌ Erro ao criar usuário")
                             st.write(e)
-
+    
         # ------------------ LISTA E EDIÇÃO DE USUÁRIOS ------------------
         busca = st.text_input("🔍 Pesquisar usuários")
         for u in [u for u in st.session_state.db_usuarios if busca.lower() in u['nome'].lower() or busca in str(u.get('matricula', ''))]:
             if u['email'] == email_logado:
                 continue
-
+    
             with st.expander(f"👤 {u['nome']} ({u['cargo']})"):
                 pode_editar = st.session_state.usuario_logado["cargo"] == "Gestor Máximo"
                 col1, col2 = st.columns(2)
-
-                # Campos editáveis
-                novo_nome = col1.text_input("Nome", value=u["nome"], key=f"n_{u['email']}", disabled=not pode_editar)
-                nova_matricula_login = col2.text_input("Matrícula (Login)", value=u["email"].split("@")[0], key=f"e_{u['email']}", disabled=not pode_editar)
-                nova_senha = col1.text_input("Nova Senha (deixe em branco para não alterar)", type="password", key=f"s_{u['email']}", disabled=not pode_editar)
-                novo_cargo = col2.selectbox("Cargo", ["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"],
-                                            index=["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"].index(u['cargo']),
-                                            key=f"c_{u['email']}", disabled=not pode_editar)
-
+    
+                # Matrícula (login) editável
+                nova_matricula_login = col1.text_input(
+                    "Matrícula (Login)",
+                    value=u["email"].split("@")[0],
+                    key=f"e_{u['email']}",
+                    disabled=not pode_editar
+                )
+    
+                # Nova senha
+                nova_senha = col1.text_input(
+                    "Nova Senha (deixe em branco para não alterar)",
+                    type="password",
+                    key=f"s_{u['email']}",
+                    disabled=not pode_editar
+                )
+    
+                # Cargo
+                novo_cargo = col2.selectbox(
+                    "Cargo",
+                    ["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"],
+                    index=["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"].index(u['cargo']),
+                    key=f"c_{u['email']}",
+                    disabled=not pode_editar
+                )
+    
                 c1_btn, c2_btn = st.columns(2)
-
+    
                 # Atualizar usuário
                 if c1_btn.button("💾 Atualizar", key=f"up_{u['email']}") and pode_editar:
                     try:
@@ -595,26 +609,25 @@ if user['cargo'] == "Gestor Máximo":
                             update_data["email"] = novo_email_completo
                         if nova_senha:
                             update_data["password"] = nova_senha
-
+    
                         if update_data and u.get("id_auth"):
                             supabase.auth.admin.update_user(u["id_auth"], update_data)
-
+    
                         # Atualiza no banco
                         supabase.table("usuarios").update({
-                            "nome": novo_nome,
                             "email": novo_email_completo,
                             "cargo": novo_cargo,
                             "matricula": gerar_hash(nova_senha) if nova_senha else u["matricula"]
                         }).eq("id", u["id"]).execute()
-
+    
                         st.session_state.db_usuarios = carregar_usuarios()
                         st.success("Usuário atualizado!")
                         st.rerun()
-
+    
                     except Exception as e:
                         st.error("❌ Erro ao atualizar usuário")
                         st.write(e)
-
+    
                 # Excluir usuário
                 if c2_btn.button("🗑️ Excluir", key=f"del_{u['email']}") and pode_editar:
                     try:
@@ -1446,6 +1459,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

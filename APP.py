@@ -531,38 +531,38 @@ if user['cargo'] == "Gestor Máximo":
                 n_e = c1.text_input("Matrícula")
                 n_c = c2.selectbox("Cargo", ["Funcionário", "Enfermeiro", "Supervisor", "Gestor Máximo"])
     
-                   if st.form_submit_button("Salvar"):
-                    if len(str(n_m).strip()) < 6:
-                        st.error("🔒 A senha deve ter no mínimo 6 caracteres.")
-                    elif not n_e or not n_n:
-                        st.warning("⚠️ Preencha Nome e Matrícula.")
-                    else:
-                        email_interno = f"{n_e}@rh12.com"
-                        try:
-                            # CRIA USUÁRIO COM CLIENT ADMIN
-                            user_auth = supabase_admin.auth.admin.create_user({
-                                "email": email_interno,
-                                "password": n_m,
-                                "email_confirm": True
-                            })
-                
-                            # Salva no banco com id_auth correto
-                            novo_usuario = {
-                                "email": email_interno,
-                                "nome": n_n,
-                                "cargo": n_c,
-                                "matricula": gerar_hash(str(n_m)),
-                                "id_auth": user_auth.user.id
-                            }
-                            supabase.table("usuarios").insert(novo_usuario).execute()
-                            st.session_state.db_usuarios = carregar_usuarios()
-                            st.success(f"Usuário {n_n} cadastrado!")
-                            st.rerun()
-                
-                        except Exception as e:
-                            st.error("❌ Erro ao criar usuário")
-                            st.write(e)
-    
+               if st.form_submit_button("Salvar"):
+                if len(str(n_m).strip()) < 6:
+                    st.error("🔒 A senha deve ter no mínimo 6 caracteres.")
+                elif not n_e or not n_n:
+                    st.warning("⚠️ Preencha Nome e Matrícula.")
+                else:
+                    email_interno = f"{n_e}@rh12.com"
+                    try:
+                        # CRIA USUÁRIO COM CLIENT ADMIN
+                        user_auth = supabase_admin.auth.admin.create_user({
+                            "email": email_interno,
+                            "password": n_m,
+                            "email_confirm": True
+                        })
+            
+                        # Salva no banco com id_auth correto
+                        novo_usuario = {
+                            "email": email_interno,
+                            "nome": n_n,
+                            "cargo": n_c,
+                            "matricula": gerar_hash(str(n_m)),
+                            "id_auth": user_auth.user.id
+                        }
+                        supabase.table("usuarios").insert(novo_usuario).execute()
+                        st.session_state.db_usuarios = carregar_usuarios()
+                        st.success(f"Usuário {n_n} cadastrado!")
+                        st.rerun()
+            
+                    except Exception as e:
+                        st.error("❌ Erro ao criar usuário")
+                        st.write(e)
+
         # ------------------ LISTA E EDIÇÃO DE USUÁRIOS ------------------
         busca = st.text_input("🔍 Pesquisar usuários")
         for u in [u for u in st.session_state.db_usuarios if busca.lower() in u['nome'].lower() or busca in str(u.get('matricula', ''))]:
@@ -1462,6 +1462,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

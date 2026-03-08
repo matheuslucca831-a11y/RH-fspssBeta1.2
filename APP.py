@@ -540,7 +540,7 @@ if user['cargo'] == "Gestor Máximo":
                         email_interno = f"{n_e}@rh12.com"
                         try:
                             # CRIA USUÁRIO COM CLIENT ADMIN
-                            user_auth = supabase_admin.auth.admin.create_user({
+                            user_auth = supabase.auth.admin.create_user({
                                 "email": email_interno,
                                 "password": n_m,
                                 "email_confirm": True
@@ -1462,6 +1462,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

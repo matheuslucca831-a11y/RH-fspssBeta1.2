@@ -384,7 +384,7 @@ if user['cargo'] == "Gestor Máximo":
                                 elif not n_e or not n_n:
                                     st.warning("⚠️ Preencha Nome e Matrícula.")
                                 else:
-                                    email_interno = f"{n_e}@rh.fspss"
+                                    email_interno = f"{n_e}@rh12.com"
 
                                     novo_usuario = {
                                         "email": email_interno,  # email técnico
@@ -1122,6 +1122,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

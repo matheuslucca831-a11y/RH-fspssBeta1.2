@@ -1427,7 +1427,7 @@ else:
 
 # ---------------- TAB NOVA OCORRÊNCIA ----------------
     with tab_nova:
-        st.header("📝 Nova Solicitação")
+            st.header("📝 Nova Solicitação")
             
             # 1. O que o usuário vê (Estético)
             opcoes_tela = ["Ajuste no ponto", "Folga"]
@@ -1684,6 +1684,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

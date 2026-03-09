@@ -18,49 +18,7 @@ from supabase import create_client
 def gerar_hash(senha: str) -> str:
     return hashlib.sha256(senha.encode()).hexdigest()
 
-# FUNÇÃO PARA CARREGAR USUÁRIOS
-def carregar_usuarios():
-    response = supabase.table("usuarios").select("*").execute()
-    return response.data
 
-
-# 🔹 INICIALIZA A LISTA DE USUÁRIOS
-if "db_usuarios" not in st.session_state:
-    st.session_state.db_usuarios = carregar_usuarios()
-
-def remover_funcionario_da_unidade(email_func):
-    try:
-        lider_email = st.session_state.usuario_logado['email']
-
-        # 1. Remove vínculo lider-liderado no banco
-        supabase.table("vinculos")\
-            .delete()\
-            .eq("lider", lider_email)\
-            .eq("liderado", email_func)\
-            .execute()
-
-        # 2. Atualiza unidade do usuário para nulo no banco
-        supabase.table("usuarios")\
-            .update({"unidade": None})\
-            .eq("email", email_func)\
-            .execute()
-
-        # 3. ATUALIZAÇÃO LOCAL (O segredo para não dar erro de interface)
-        # Remove a unidade da lista de usuários que já está carregada na memória
-        if "db_usuarios" in st.session_state:
-            for u in st.session_state.db_usuarios:
-                if u['email'] == email_func:
-                    u['unidade'] = None
-        
-        return True
-    except Exception as e:
-        st.error(f"Erro ao remover vínculo: {e}")
-        return False
-
-    # Atualiza memória local para refletir a mudança
-    for u in st.session_state.db_usuarios:
-        if u['email'] == email_func:
-            u['unidade'] = None
 
     
 def gerar_hash(senha):
@@ -137,6 +95,50 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 supabase_admin = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# FUNÇÃO PARA CARREGAR USUÁRIOS
+def carregar_usuarios():
+    response = supabase.table("usuarios").select("*").execute()
+    return response.data
+
+
+# 🔹 INICIALIZA A LISTA DE USUÁRIOS
+if "db_usuarios" not in st.session_state:
+    st.session_state.db_usuarios = carregar_usuarios()
+
+def remover_funcionario_da_unidade(email_func):
+    try:
+        lider_email = st.session_state.usuario_logado['email']
+
+        # 1. Remove vínculo lider-liderado no banco
+        supabase.table("vinculos")\
+            .delete()\
+            .eq("lider", lider_email)\
+            .eq("liderado", email_func)\
+            .execute()
+
+        # 2. Atualiza unidade do usuário para nulo no banco
+        supabase.table("usuarios")\
+            .update({"unidade": None})\
+            .eq("email", email_func)\
+            .execute()
+
+        # 3. ATUALIZAÇÃO LOCAL (O segredo para não dar erro de interface)
+        # Remove a unidade da lista de usuários que já está carregada na memória
+        if "db_usuarios" in st.session_state:
+            for u in st.session_state.db_usuarios:
+                if u['email'] == email_func:
+                    u['unidade'] = None
+        
+        return True
+    except Exception as e:
+        st.error(f"Erro ao remover vínculo: {e}")
+        return False
+
+    # Atualiza memória local para refletir a mudança
+    for u in st.session_state.db_usuarios:
+        if u['email'] == email_func:
+            u['unidade'] = None
+            
 # 3. >>> COLOQUE AQUI AS INICIALIZAÇÕES <<<
 if "funcionario_para_remover" not in st.session_state:
     st.session_state.funcionario_para_remover = None
@@ -1513,6 +1515,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

@@ -1427,43 +1427,44 @@ else:
 
 # ---------------- TAB NOVA OCORRÊNCIA ----------------
     with tab_nova:
-        st.header("📝 Nova Solicitação")
-        
-        # 1. Escolha da Categoria
-        categoria = st.radio("Selecione a categoria:", ["Ocorrência de Ponto", "Folga"], horizontal=True)
-        
-        # 2. Definição do Motivo e Detalhes
-        detalhe_especifico = ""
-        if categoria == "Ocorrência de Ponto":
-            motivo_pai = st.selectbox("Tipo de Ocorrência:", 
-                                     ["Esquecimento", "Atestado", "Erro no Relógio", "Outros"])
-            if motivo_pai == "Atestado":
-                detalhe_especifico = st.selectbox("Tipo de Atestado:", 
-                                                 ["Médico", "Acompanhante", "Comparecimento", "Doação de Sangue"])
-        else:
-            motivo_pai = "Folga"
-            detalhe_especifico = st.selectbox("Folga referente a:", [
-                "BANCO DE HORAS", "FOLGA ABONADA (Art. 56, XII)", "SERVIÇO ELEITORAL (TRE)",
-                "CAMPANHA DE VACINAÇÃO", "ABONO NATALÍCIO (Art. 56, X)", "OUTROS"
-            ])
-    
-        with st.form("f_ponto_unico", clear_on_submit=True):
-            col_a, col_b = st.columns(2)
-            data_inicio = col_a.date_input("Data inicial")
-            data_fim = col_b.date_input("Data final")
-    
-            # 3. Lógica de Horários
-            if categoria == "Ocorrência de Ponto" and motivo_pai != "Atestado":
-                st.write("---")
-                st.write("📌 **Informe os horários para ajuste:**")
-                h_cols = st.columns(4)
-                h1 = h_cols[0].time_input("Entrada", value=time(0,0))
-                h2 = h_cols[1].time_input("S. Almoço", value=time(0,0))
-                h3 = h_cols[2].time_input("R. Almoço", value=time(0,0))
-                h4 = h_cols[3].time_input("Saída", value=time(0,0))
-                txt_h = f"{h1.strftime('%H:%M')} | {h2.strftime('%H:%M')} | {h3.strftime('%H:%M')} | {h4.strftime('%H:%M')}"
+            st.header("📝 Nova Solicitação")
+            
+            # 1. Escolha da Categoria (NOME ALTERADO AQUI)
+            categoria = st.radio("Selecione a categoria:", ["Ajuste no ponto", "Folga"], horizontal=True)
+            
+            # 2. Definição do Motivo e Detalhes
+            detalhe_especifico = ""
+            # AJUSTADO AQUI TAMBÉM PARA RECONHECER O NOVO NOME
+            if categoria == "Ajuste no ponto":
+                motivo_pai = st.selectbox("Tipo de Ocorrência:", 
+                                         ["Esquecimento", "Atestado", "Erro no Relógio", "Outros"])
+                if motivo_pai == "Atestado":
+                    detalhe_especifico = st.selectbox("Tipo de Atestado:", 
+                                                     ["Médico", "Acompanhante", "Comparecimento", "Doação de Sangue"])
             else:
-                txt_h = "Período Integral"
+                motivo_pai = "Folga"
+                detalhe_especifico = st.selectbox("Folga referente a:", [
+                    "BANCO DE HORAS", "FOLGA ABONADA (Art. 56, XII)", "SERVIÇO ELEITORAL (TRE)",
+                    "CAMPANHA DE VACINAÇÃO", "ABONO NATALÍCIO (Art. 56, X)", "OUTROS"
+                ])
+        
+            with st.form("f_ponto_unico", clear_on_submit=True):
+                col_a, col_b = st.columns(2)
+                data_inicio = col_a.date_input("Data inicial")
+                data_fim = col_b.date_input("Data final")
+        
+                # 3. Lógica de Horários (CORRIGIDO PARA "Ajuste no ponto")
+                if categoria == "Ajuste no ponto" and motivo_pai != "Atestado":
+                    st.write("---")
+                    st.write("📌 **Informe os horários para ajuste:**")
+                    h_cols = st.columns(4)
+                    h1 = h_cols[0].time_input("Entrada", value=time(0,0))
+                    h2 = h_cols[1].time_input("S. Almoço", value=time(0,0))
+                    h3 = h_cols[2].time_input("R. Almoço", value=time(0,0))
+                    h4 = h_cols[3].time_input("Saída", value=time(0,0))
+                    txt_h = f"{h1.strftime('%H:%M')} | {h2.strftime('%H:%M')} | {h3.strftime('%H:%M')} | {h4.strftime('%H:%M')}"
+                else:
+                    txt_h = "Período Integral"
     
             st.write("---")
             just = st.text_area("Justificativa / Observações adicionais:")
@@ -1675,6 +1676,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

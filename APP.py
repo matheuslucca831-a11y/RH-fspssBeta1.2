@@ -1073,6 +1073,7 @@ if user['cargo'] == "Gestor Máximo":
                                 if st.button("🗑️ Excluir", key=f"btn_exc_{id_real}", use_container_width=True):
                                     try:
                                         supabase.table("ocorrencias").delete().eq("id", id_real).execute()
+                                        st.cache_data.clear()
                                         st.session_state.db_ocorrencias = carregar_ocorrencias()
                                         st.rerun()
                                     except Exception as e:
@@ -1625,6 +1626,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

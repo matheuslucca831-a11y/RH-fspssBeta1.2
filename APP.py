@@ -1193,9 +1193,20 @@ if user['cargo'] == "Gestor Máximo":
                                             st.error(f"Erro ao restaurar: {e}")
 
                                 if st.button("🗑️ Excluir", key=f"del_{o['id']}", use_container_width=True):
-                                    supabase.table("ocorrencias").delete().eq("id", o['id']).execute()
-                                    st.session_state.db_ocorrencias = carregar_ocorrencias()
-                                    st.rerun()
+                                    try:
+                                        # 1. Deleta fisicamente no Supabase
+                                        supabase.table("ocorrencias").delete().eq("id", o['id']).execute()
+                                        
+                                        # 2. LIMPA O CACHE (Essencial para o item sumir da lista na hora)
+                                        st.cache_data.clear()
+                                        
+                                        # 3. Atualiza a memória e recarrega a página
+                                        st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                        st.success("Ocorrência excluída com sucesso!")
+                                        st.rerun()
+                                        
+                                    except Exception as e:
+                                        st.error(f"Erro ao excluir: {e}")
             else:
                 st.info("Nenhum registro arquivado.")
         else:
@@ -1664,6 +1675,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

@@ -51,7 +51,7 @@ def carregar_vinculos():
     except Exception as e:
         return {}
 
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=2)
 def carregar_ocorrencias():
     try:
         res = supabase.table("ocorrencias").select("*").order("id", desc=True).execute()
@@ -199,7 +199,8 @@ st.session_state.db_usuarios = carregar_usuarios()
 
 def salvar_csv(nome_arquivo, dados):
     pd.DataFrame(dados).to_csv(nome_arquivo, index=False)
-
+    
+@st.cache_data(ttl=2)
 def carregar_pendentes(unidade):
     try:
         res = supabase.table("ocorrencias") \
@@ -214,6 +215,8 @@ def carregar_pendentes(unidade):
         st.error(f"Erro ao carregar pendentes: {e}")
         return []
 
+
+@st.cache_data(ttl=2)
 def carregar_minhas_ocorrencias(email):
     try:
         res = supabase.table("ocorrencias") \
@@ -1062,6 +1065,8 @@ if user['cargo'] == "Gestor Máximo":
                                 if st.button("📦 Arquivar", key=f"btn_arq_{id_real}", use_container_width=True):
                                     try:
                                         supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", id_real).execute()
+                                        st.cache_data.clear()
+
                                         # REGISTRA O LOG DO ARQUIVAMENTO
                                         registrar_log(id_real, "Ocorrência enviada para o Arquivo Morto")
                                         
@@ -1505,10 +1510,23 @@ else:
                     }
     
                     try:
-                        supabase.table("ocorrencias").insert(nova_ocorrencia).execute()
-                        st.success("✅ Solicitação enviada com sucesso!")
+                        # 4. SALVAR NO BANCO E PEGAR O ID GERADO
+                        res_insert = supabase.table("ocorrencias").insert(nova_ocorrencia).execute()
+                        
+                        if res_insert.data:
+                            novo_id = res_insert.data[0]['id']
+                            
+                            # 5. REGISTRAR O LOG DE CRIAÇÃO (AUDITORIA)
+                            # Isso cria a primeira "bolinha" na linha do tempo
+                            registrar_log(novo_id, "Solicitação criada pelo funcionário")
+
+                        # 6. LIMPAR O CACHE E RECARREGAR (O SEGREDO PARA ATUALIZAR NA HORA)
+                        st.cache_data.clear() 
                         st.session_state.db_ocorrencias = carregar_ocorrencias()
+                        
+                        st.success("✅ Solicitação enviada com sucesso!")
                         st.rerun()
+
                     except Exception as e:
                         st.error(f"Erro ao salvar no banco: {e}")
     # ---------------- HISTÓRICO ----------------
@@ -1626,6 +1644,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

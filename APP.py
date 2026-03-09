@@ -1017,18 +1017,18 @@ if user['cargo'] == "Gestor Máximo":
                                     st.markdown(f"✅ **Analisado por:** {o['aprovado_por']}")
 
                                 with st.expander("🕒 Ver Linha do Tempo / Auditoria"):
-                                try:
-                                    res_logs = supabase.table("logs_atividades").select("*").eq("ocorrencia_id", str(o['id'])).order("created_at", desc=False).execute()
-                                    if res_logs.data:
-                                        for log in res_logs.data:
-                                            st.caption(f"📅 {log['created_at']}")
-                                            st.markdown(f"**{log['acao']}**")
-                                            st.markdown(f"👤 Responsável: {log['quem_fez']}")
-                                            st.divider()
-                                    else:
-                                        st.info("Sem logs para esta ocorrência.")
-                                except Exception as e:
-                                    st.error(f"Erro ao carregar auditoria: {e}")
+                                    try:
+                                        res_logs = supabase.table("logs_atividades").select("*").eq("ocorrencia_id", str(o['id'])).order("created_at", desc=False).execute()
+                                        if res_logs.data:
+                                            for log in res_logs.data:
+                                                st.caption(f"📅 {log['created_at']}")
+                                                st.markdown(f"**{log['acao']}**")
+                                                st.markdown(f"👤 Responsável: {log['quem_fez']}")
+                                                st.divider()
+                                        else:
+                                            st.info("Sem logs para esta ocorrência.")
+                                    except Exception as e:
+                                        st.error(f"Erro ao carregar auditoria: {e}")
     
                                 # Justificativa e Anexo (Funcionalidades que tinham sumido)
                                 if o.get("detalhes"):
@@ -1602,6 +1602,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

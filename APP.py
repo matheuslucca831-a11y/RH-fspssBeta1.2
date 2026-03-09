@@ -1478,6 +1478,10 @@ else:
                                     st.divider()
                             else:
                                 st.info("Aguardando processamento inicial.")
+
+                        except Exception as e:
+                            # Se ainda der erro, ele vai mostrar o motivo real aqui
+                            st.error(f"Erro Detalhado na consulta de logs: {e}")
             
                         # 2. EXIBIÇÃO DO APROVADOR COM DESTAQUE
                         if o.get("aprovado_por"):
@@ -1559,6 +1563,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

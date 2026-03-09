@@ -1468,21 +1468,22 @@ else:
                         st.markdown(f"📅 {o.get('data','')} | {o.get('motivo','')} | Status: :{cor_status(o.get('status',''))}[**{o.get('status','')}**]")
 
                         with st.expander("🕒 Ver Linha do Tempo / Auditoria"):
-                            res_logs = supabase.table("logs_atividades").select("*").eq("ocorrencia_id", str(o['id'])).order("created_at", desc=False).execute()
-                            
-                            if res_logs.data:
-                                for log in res_logs.data:
-                                    # Usando um bullet point e negrito para destacar a ação
-                                    st.markdown(f"🔹 **{log['acao']}**")
-                                    st.caption(f"🕒 {log['created_at']} — por {log['quem_fez']}")
-                                    st.divider()
-                            else:
-                                st.info("Aguardando processamento inicial.")
-
-                        except Exception as e:
-                            # Se ainda der erro, ele vai mostrar o motivo real aqui
-                            st.error(f"Erro Detalhado na consulta de logs: {e}")
-            
+                            try:
+                                res_logs = supabase.table("logs_atividades").select("*").eq("ocorrencia_id", str(o['id'])).order("created_at", desc=False).execute()
+                                
+                                if res_logs.data:
+                                    for log in res_logs.data:
+                                        # Usando um bullet point e negrito para destacar a ação
+                                        st.markdown(f"🔹 **{log['acao']}**")
+                                        st.caption(f"🕒 {log['created_at']} — por {log['quem_fez']}")
+                                        st.divider()
+                                else:
+                                    st.info("Aguardando processamento inicial.")
+    
+                            except Exception as e:
+                                # Se ainda der erro, ele vai mostrar o motivo real aqui
+                                st.error(f"Erro Detalhado na consulta de logs: {e}")
+                
                         # 2. EXIBIÇÃO DO APROVADOR COM DESTAQUE
                         if o.get("aprovado_por"):
                             st.info(f"✅ Analisado por: {o['aprovado_por']}")
@@ -1563,6 +1564,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

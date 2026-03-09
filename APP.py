@@ -95,6 +95,23 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 supabase_admin = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+def registrar_log(id_ocorrencia, acao):
+    """Gera um rastro de auditoria para cada ação na ocorrência."""
+    try:
+        # Pega dados do usuário que está logado e realizando a ação
+        user_logado = st.session_state.usuario_logado
+        
+        log_data = {
+            "ocorrencia_id": str(id_ocorrencia),
+            "quem_fez": f"{user_logado['nome']} ({user_logado['cargo']})",
+            "acao": acao,
+            "created_at": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        }
+        
+        supabase.table("logs_atividades").insert(log_data).execute()
+    except Exception as e:
+        st.error(f"Erro ao registrar log de auditoria: {e}")
+
 # FUNÇÃO PARA CARREGAR USUÁRIOS
 def carregar_usuarios():
     response = supabase.table("usuarios").select("*").execute()
@@ -1284,6 +1301,12 @@ else:
                                     "status": novo_status,
                                     "aprovado_por": f"{user['nome']} (Enfermeiro/Supervisor)"
                                 }).eq("id", oc['id']).execute()
+
+                                registrar_log(oc['id'], f"Aprovação inicial realizada. Status alterado para: {novo_status}")
+
+                                st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                st.success(info_msg)
+                                st.rerun()
                                 
                                 st.session_state.db_ocorrencias = carregar_ocorrencias()
                                 st.success(info_msg)
@@ -1298,6 +1321,15 @@ else:
                                     "status": "❌ Negado",
                                     "aprovado_por": f"{user['nome']} ({user['cargo']})"
                                 }).eq("id", oc['id']).execute()
+
+                                registrar_log(oc['id'], "Solicitação NEGADA pelo gestor da unidade.")
+
+                                st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                st.warning("Ocorrência negada.")
+                                st.rerun()
+                                                                
+
+                                
                                 st.session_state.db_ocorrencias = carregar_ocorrencias()
                                 st.warning("Ocorrência negada.")
                                 st.rerun()
@@ -1434,7 +1466,19 @@ else:
                     with col_txt:
                         # 1. LINHA PRINCIPAL COLORIDA (Troquei st.write por st.markdown)
                         st.markdown(f"📅 {o.get('data','')} | {o.get('motivo','')} | Status: :{cor_status(o.get('status',''))}[**{o.get('status','')}**]")
-                        
+
+                        with st.expander("🕒 Ver Linha do Tempo / Auditoria"):
+                            res_logs = supabase.table("logs_atividades").select("*").eq("ocorrencia_id", str(o['id'])).order("created_at", desc=False).execute()
+                            
+                            if res_logs.data:
+                                for log in res_logs.data:
+                                    # Usando um bullet point e negrito para destacar a ação
+                                    st.markdown(f"🔹 **{log['acao']}**")
+                                    st.caption(f"🕒 {log['created_at']} — por {log['quem_fez']}")
+                                    st.divider()
+                            else:
+                                st.info("Aguardando processamento inicial.")
+            
                         # 2. EXIBIÇÃO DO APROVADOR COM DESTAQUE
                         if o.get("aprovado_por"):
                             st.info(f"✅ Analisado por: {o['aprovado_por']}")
@@ -1515,6 +1559,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

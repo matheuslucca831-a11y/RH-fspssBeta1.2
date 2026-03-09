@@ -11,14 +11,25 @@ from streamlit_cookies_manager import EncryptedCookieManager
 import streamlit as st
 from supabase import create_client
 from passlib.hash import pbkdf2_sha256
-
+import pytz
 import hashlib
 from supabase import create_client
+import pandas as pd
 
 def gerar_hash(senha: str) -> str:
     return hashlib.sha256(senha.encode()).hexdigest()
 
-
+def formatar_data_brasilia(data_utc):
+    if not data_utc:
+        return ""
+    try:
+        # Tira o 'Z' ou '+00:00' e entende como UTC
+        data_obj = datetime.fromisoformat(str(data_utc).replace('Z', '+00:00'))
+        fuso_br = pytz.timezone('America/Sao_Paulo')
+        # Converte para o nosso horário
+        return data_obj.astimezone(fuso_br).strftime('%d/%m/%Y %H:%M')
+    except:
+        return data_utc
 
     
 def gerar_hash(senha):
@@ -1019,14 +1030,20 @@ if user['cargo'] == "Gestor Máximo":
                                 with st.expander("🕒 Ver Linha do Tempo / Auditoria"):
                                     try:
                                         res_logs = supabase.table("logs_atividades").select("*").eq("ocorrencia_id", str(o['id'])).order("created_at", desc=False).execute()
+                                        
                                         if res_logs.data:
                                             for log in res_logs.data:
-                                                st.caption(f"📅 {log['created_at']}")
+                                                # 1. Converte o horário do servidor (UTC) para Brasília
+                                                data_formatada = formatar_data_brasilia(log['created_at'])
+                                                
+                                                # 2. Exibe as informações com o horário corrigido
+                                                st.caption(f"📅 {data_formatada}")
                                                 st.markdown(f"**{log['acao']}**")
                                                 st.markdown(f"👤 Responsável: {log['quem_fez']}")
                                                 st.divider()
                                         else:
                                             st.info("Sem logs para esta ocorrência.")
+                                            
                                     except Exception as e:
                                         st.error(f"Erro ao carregar auditoria: {e}")
     
@@ -1511,15 +1528,17 @@ else:
                                 
                                 if res_logs.data:
                                     for log in res_logs.data:
-                                        # Usando um bullet point e negrito para destacar a ação
+                                        # 1. FORMATAMOS A DATA ANTES DE EXIBIR
+                                        data_br = formatar_data_brasilia(log['created_at'])
+                                        
+                                        # 2. EXIBIMOS COM O HORÁRIO CORRIGIDO
                                         st.markdown(f"🔹 **{log['acao']}**")
-                                        st.caption(f"🕒 {log['created_at']} — por {log['quem_fez']}")
+                                        st.caption(f"🕒 {data_br} — por {log['quem_fez']}")
                                         st.divider()
                                 else:
                                     st.info("Aguardando processamento inicial.")
     
                             except Exception as e:
-                                # Se ainda der erro, ele vai mostrar o motivo real aqui
                                 st.error(f"Erro Detalhado na consulta de logs: {e}")
                 
                         # 2. EXIBIÇÃO DO APROVADOR COM DESTAQUE
@@ -1602,6 +1621,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

@@ -1156,18 +1156,22 @@ if user['cargo'] == "Gestor Máximo":
                                     with st.expander("🖼️ Visualizar Documento"):
                                         exibir_anexo(o["anexo"])
     
-                            with col_acao:
-                                if st.button("📤 Restaurar", key=f"rest_{o['id']}", use_container_width=True):
-                                    try:
-                                        supabase.table("ocorrencias").update({"arquivado": "Não"}).eq("id", o['id']).execute()
-
-                                                            # REGISTRA O LOG DO ARQUIVAMENTO
-                                        registrar_log(id_real, "Ocorrência enviada para o Arquivo Morto")
-                                        
-                                        st.session_state.db_ocorrencias = carregar_ocorrencias()
-                                        st.rerun()
-                                    except Exception as e:
-                                        st.error(f"Erro: {e}")
+                                with col_acao:
+                                    # Mudamos 'id_real' para 'o['id']' que é como o seu loop está definido
+                                    if st.button("📤 Restaurar", key=f"rest_{o['id']}", use_container_width=True):
+                                        try:
+                                            # 1. Atualiza no banco de dados
+                                            supabase.table("ocorrencias").update({"arquivado": "Não"}).eq("id", o['id']).execute()
+                                            
+                                            # 2. Registra a auditoria com o horário de Brasília
+                                            registrar_log(o['id'], "Ocorrência restaurada do Arquivo Morto")
+                                            
+                                            # 3. Atualiza a tela
+                                            st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                            st.success("Ocorrência restaurada!")
+                                            st.rerun()
+                                        except Exception as e:
+                                            st.error(f"Erro ao restaurar: {e}")
 
                                 if st.button("🗑️ Excluir", key=f"del_{o['id']}", use_container_width=True):
                                     supabase.table("ocorrencias").delete().eq("id", o['id']).execute()
@@ -1621,6 +1625,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

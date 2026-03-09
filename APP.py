@@ -1578,10 +1578,17 @@ else:
                     # Lógica do botão de exclusão/cancelamento
                     if col_btn.button("🗑️ Cancelar", key=f"canc_user_{o['id']}"):
                         try:
+                            # 1. Remove do Supabase
                             supabase.table("ocorrencias").delete().eq("id", o['id']).execute()
+                            
+                            # 2. LIMPA O CACHE DO STREAMLIT (Fundamental para sumir na hora!)
+                            st.cache_data.clear()
+                            
+                            # 3. Atualiza a lista na memória e recarrega a página
                             st.session_state.db_ocorrencias = carregar_ocorrencias()
                             st.success("Solicitação cancelada.")
                             st.rerun()
+                            
                         except Exception as e:
                             st.error(f"Erro ao cancelar: {e}")
 
@@ -1644,6 +1651,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

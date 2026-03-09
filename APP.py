@@ -1015,6 +1015,20 @@ if user['cargo'] == "Gestor Máximo":
                                 
                                 if "aprovado_por" in o and pd.notna(o["aprovado_por"]) and o["aprovado_por"] != "":
                                     st.markdown(f"✅ **Analisado por:** {o['aprovado_por']}")
+
+                                with st.expander("🕒 Ver Linha do Tempo / Auditoria"):
+                                try:
+                                    res_logs = supabase.table("logs_atividades").select("*").eq("ocorrencia_id", str(o['id'])).order("created_at", desc=False).execute()
+                                    if res_logs.data:
+                                        for log in res_logs.data:
+                                            st.caption(f"📅 {log['created_at']}")
+                                            st.markdown(f"**{log['acao']}**")
+                                            st.markdown(f"👤 Responsável: {log['quem_fez']}")
+                                            st.divider()
+                                    else:
+                                        st.info("Sem logs para esta ocorrência.")
+                                except Exception as e:
+                                    st.error(f"Erro ao carregar auditoria: {e}")
     
                                 # Justificativa e Anexo (Funcionalidades que tinham sumido)
                                 if o.get("detalhes"):
@@ -1031,6 +1045,9 @@ if user['cargo'] == "Gestor Máximo":
                                 if st.button("📦 Arquivar", key=f"btn_arq_{id_real}", use_container_width=True):
                                     try:
                                         supabase.table("ocorrencias").update({"arquivado": "Sim"}).eq("id", id_real).execute()
+                                        # REGISTRA O LOG DO ARQUIVAMENTO
+                                        registrar_log(id_real, "Ocorrência enviada para o Arquivo Morto")
+                                        
                                         st.session_state.db_ocorrencias = carregar_ocorrencias()
                                         st.rerun()
                                     except Exception as e:
@@ -1124,9 +1141,17 @@ if user['cargo'] == "Gestor Máximo":
     
                             with col_acao:
                                 if st.button("📤 Restaurar", key=f"rest_{o['id']}", use_container_width=True):
-                                    supabase.table("ocorrencias").update({"arquivado": "Não"}).eq("id", o['id']).execute()
-                                    st.session_state.db_ocorrencias = carregar_ocorrencias()
-                                    st.rerun()
+                                    try:
+                                        supabase.table("ocorrencias").update({"arquivado": "Não"}).eq("id", o['id']).execute()
+
+                                                            # REGISTRA O LOG DO ARQUIVAMENTO
+                                        registrar_log(id_real, "Ocorrência enviada para o Arquivo Morto")
+                                        
+                                        st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Erro: {e}")
+
                                 if st.button("🗑️ Excluir", key=f"del_{o['id']}", use_container_width=True):
                                     supabase.table("ocorrencias").delete().eq("id", o['id']).execute()
                                     st.session_state.db_ocorrencias = carregar_ocorrencias()
@@ -1577,6 +1602,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

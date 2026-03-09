@@ -1428,16 +1428,24 @@ else:
 # ---------------- TAB NOVA OCORRÊNCIA ----------------
     with tab_nova:
         st.header("📝 Nova Solicitação")
-        
-        # 1. Escolha da Categoria (NOME ALTERADO AQUI)
-        categoria = st.radio("Selecione a categoria:", ["Ajuste no ponto", "Folga"], horizontal=True)
-        
-        # 2. Definição do Motivo e Detalhes
-        detalhe_especifico = ""
-        # AJUSTADO AQUI TAMBÉM PARA RECONHECER O NOVO NOME
-        if categoria == "Ajuste no ponto":
-            motivo_pai = st.selectbox("Tipo de Ocorrência:", 
-                                     ["Esquecimento", "Atestado", "Erro no Relógio", "Outros"])
+            
+            # 1. O que o usuário vê (Estético)
+            opcoes_tela = ["Ajuste no ponto", "Folga"]
+            escolha_usuario = st.radio("Selecione a categoria:", opcoes_tela, horizontal=True)
+            
+            # 2. "Tradução" para o Banco de Dados (Lógica Interna)
+            # Se ele escolher 'Ajuste no ponto', a variável 'categoria' vira 'Ocorrência de Ponto'
+            mapa_categorias = {
+                "Ajuste no ponto": "Ocorrência de Ponto",
+                "Folga": "Folga"
+            }
+            categoria = mapa_categorias[escolha_usuario] # Aqui está a mágica!
+            
+            # Daqui para baixo, todo o seu código continua IGUAL
+            # O 'if categoria == "Ocorrência de Ponto"' vai continuar funcionando perfeitamente
+            if categoria == "Ocorrência de Ponto":
+                motivo_pai = st.selectbox("Tipo de Ocorrência:", ["Esquecimento", "Atestado", "Erro no Relógio", "Outros"])
+                # ... resto do seu código
             if motivo_pai == "Atestado":
                 detalhe_especifico = st.selectbox("Tipo de Atestado:", 
                                                  ["Médico", "Acompanhante", "Comparecimento", "Doação de Sangue"])
@@ -1676,6 +1684,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

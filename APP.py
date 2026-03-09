@@ -914,8 +914,14 @@ if user['cargo'] == "Gestor Máximo":
                                 "status": "✅ Deferido",
                                 "aprovado_por": f"{f.get('aprovado_por')} / Direção"
                             }).eq("id", f['id']).execute()
+
+                            # REGISTRA O LOG AQUI
+                            registrar_log(f['id'], "Ocorrência DEFERIDA pela Direção")
+                            
                             st.session_state.db_ocorrencias = carregar_ocorrencias()
+                            st.success("Solicitação deferida com sucesso!")
                             st.rerun()
+                   
                             
                         if st.button("❌ INDEFERIR", key=f"ind_{f['id']}", use_container_width=True):
                             # Opcional: Adicionar um campo de observação da Direção antes de negar
@@ -923,8 +929,15 @@ if user['cargo'] == "Gestor Máximo":
                                 "status": "❌ Indeferido",
                                 "aprovado_por": "Direção"
                             }).eq("id", f['id']).execute()
+
+                            # REGISTRA O LOG AQUI
+                            registrar_log(f['id'], "Ocorrência INDEFERIDA pela Direção")
+                            
                             st.session_state.db_ocorrencias = carregar_ocorrencias()
+                            st.warning("Solicitação indeferida.")
                             st.rerun()
+                            
+
 
 
 
@@ -1564,6 +1577,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

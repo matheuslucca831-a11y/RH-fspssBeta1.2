@@ -1147,9 +1147,9 @@ if user['cargo'] == "Gestor Máximo":
                     data_str = f_data_sel.strftime("%Y-%m-%d")
                     mask &= df_arq["data"].astype(str).str.contains(data_str, na=False)
     
-                df_arq_filtrado = df_arq[mask].copy()
-                ordem_asc = (ordem == "Mais Antigas")
-                df_arq_filtrado = df_arq_filtrado.sort_values(by="id", ascending=ordem_asc)
+                    df_arq_filtrado = df_arq[mask].copy()
+                    ordem_asc = (ordem == "Mais Antigas")
+                    df_arq_filtrado = df_arq_filtrado.sort_values(by="id", ascending=ordem_asc)
     
                 # --- 3. EXIBIÇÃO DOS CARDS ---
                 if df_arq_filtrado.empty:
@@ -1684,6 +1684,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

@@ -923,34 +923,47 @@ if user['cargo'] == "Gestor Máximo":
     
                     with c_acts:
                         st.write("###") # Espaçamento
+                        
+                        # --- BOTÃO DEFERIR ---
                         if st.button("✅ DEFERIR", key=f"def_{f['id']}", use_container_width=True):
-                            supabase.table("ocorrencias").update({
-                                "status": "✅ Deferido",
-                                "aprovado_por": f"{f.get('aprovado_por')} / Direção"
-                            }).eq("id", f['id']).execute()
-
-                            # REGISTRA O LOG AQUI
-                            registrar_log(f['id'], "Ocorrência DEFERIDA pela Direção")
-                            
-                            st.session_state.db_ocorrencias = carregar_ocorrencias()
-                            st.success("Solicitação deferida com sucesso!")
-                            st.rerun()
-                   
-                            
+                            try:
+                                supabase.table("ocorrencias").update({
+                                    "status": "✅ Deferido",
+                                    "aprovado_por": f"{f.get('aprovado_por')} / Direção"
+                                }).eq("id", f['id']).execute()
+    
+                                # 1. REGISTRA O LOG
+                                registrar_log(f['id'], "Ocorrência DEFERIDA pela Direção")
+                                
+                                # 2. LIMPA O CACHE E RECARREGA (O segredo para atualizar na hora!)
+                                st.cache_data.clear()
+                                st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                
+                                st.success("Solicitação deferida com sucesso!")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro ao deferir: {e}")
+    
+                        # --- BOTÃO INDEFERIR ---
                         if st.button("❌ INDEFERIR", key=f"ind_{f['id']}", use_container_width=True):
-                            # Opcional: Adicionar um campo de observação da Direção antes de negar
-                            supabase.table("ocorrencias").update({
-                                "status": "❌ Indeferido",
-                                "aprovado_por": "Direção"
-                            }).eq("id", f['id']).execute()
-
-                            # REGISTRA O LOG AQUI
-                            registrar_log(f['id'], "Ocorrência INDEFERIDA pela Direção")
-                            
-                            st.session_state.db_ocorrencias = carregar_ocorrencias()
-                            st.warning("Solicitação indeferida.")
-                            st.rerun()
-                            
+                            try:
+                                supabase.table("ocorrencias").update({
+                                    "status": "❌ Indeferido",
+                                    "aprovado_por": "Direção"
+                                }).eq("id", f['id']).execute()
+    
+                                # 1. REGISTRA O LOG
+                                registrar_log(f['id'], "Ocorrência INDEFERIDA pela Direção")
+                                
+                                # 2. LIMPA O CACHE E RECARREGA
+                                st.cache_data.clear()
+                                st.session_state.db_ocorrencias = carregar_ocorrencias()
+                                
+                                st.warning("Solicitação indeferida.")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro ao indeferir: {e}")
+        
 
 
 
@@ -1651,6 +1664,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

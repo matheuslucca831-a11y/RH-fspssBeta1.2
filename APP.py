@@ -18,7 +18,15 @@ from supabase import create_client
 def gerar_hash(senha: str) -> str:
     return hashlib.sha256(senha.encode()).hexdigest()
 
+# FUNÇÃO PARA CARREGAR USUÁRIOS
+def carregar_usuarios():
+    response = supabase.table("usuarios").select("*").execute()
+    return response.data
 
+
+# 🔹 INICIALIZA A LISTA DE USUÁRIOS
+if "db_usuarios" not in st.session_state:
+    st.session_state.db_usuarios = carregar_usuarios()
 
 def remover_funcionario_da_unidade(email_func):
     try:
@@ -149,15 +157,7 @@ if "supabase_session" in st.session_state:
             st.session_state.supabase_session.refresh_token
         )
 
-# FUNÇÃO PARA CARREGAR USUÁRIOS
-def carregar_usuarios():
-    response = supabase.table("usuarios").select("*").execute()
-    return response.data
 
-
-# 🔹 INICIALIZA A LISTA DE USUÁRIOS
-if "db_usuarios" not in st.session_state:
-    st.session_state.db_usuarios = carregar_usuarios()
 
 
 print(gerar_hash("suasenha"))
@@ -1513,6 +1513,7 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+
 
 
 

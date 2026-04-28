@@ -128,24 +128,24 @@ def carregar_usuarios():
     response = supabase.table("usuarios").select("*").execute()
     return response.data
 
-def criar_gestor_maximo(nome, usuario, senha_limpa):
+def criar_gestor_maximo_ajustado(nome_completo, matricula_pura, senha_limpa):
     try:
-        # 1. Gerar o hash da senha usando a função que você já tem no código
+        # No seu sistema, a 'matrícula' no banco guarda a SENHA criptografada
         senha_criptografada = pbkdf2_sha256.hash(senha_limpa)
         
-        # 2. Montar os dados do usuário
+        # O 'e-mail' no banco guarda a MATRÍCULA + @rh12.com
+        email_formatado = f"{matricula_pura}@rh12.com"
+        
         novo_usuario = {
-            "nome": nome,
-            "usuario": usuario,
-            "senha": senha_criptografada,
-            "cargo": "Gestor Máximo",  # Ou "Admin" conforme sua lógica
-            "setor": "Diretoria",
-            "unidade": "Sede"
+            "nome": nome_completo,
+            "e-mail": email_formatado, # Coluna com hífen conforme o print
+            "matrícula": senha_criptografada, # Onde o sistema guarda a senha
+            "carga": "Gestor Máximo", # No banco está escrito 'carga' e não 'cargo'
+            "Ótimo": "Sede" # Coluna que parece ser o setor/unidade
         }
         
-        # 3. Inserir no Supabase
-        response = supabase.table("usuarios").insert(novo_usuario).execute()
-        st.success(f"Gestor {nome} criado com sucesso!")
+        response = supabase.table("usuários").insert(novo_usuario).execute()
+        st.success(f"Gestor {nome_completo} criado com sucesso!")
         return response.data
     except Exception as e:
         st.error(f"Erro ao criar gestor: {e}")
@@ -465,8 +465,10 @@ if not st.session_state.get("autenticado", False):
     _, col_login, _ = st.columns([1, 1.5, 1])
 
     with col_login:
-        if st.button("Executar Criação de Gestor Inicial"):
-          criar_gestor_maximo("Admin", "Admin", "123")
+        if st.button("Criar Acesso Gestor"):
+        # Exemplo: Nome, Matrícula 999, Senha 'admin123'
+            criar_gestor_maximo_ajustado("ADMIN", "ADMIN", "ADMIN")
+        
 
         st.write("# 🔐 RH Digital - FSPSS")
 

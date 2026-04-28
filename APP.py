@@ -138,8 +138,8 @@ def criar_gestor_maximo_final(nome_completo, matricula_pura, senha_limpa):
         dados_usuario = {
             "nome": nome_completo,
             "email": email_formatado,      # Tentei sem o hífen agora
-            "matricula": senha_criptografada, # Tentei sem o acento
-            "cargo": "Gestor Máximo",         # Tentei 'cargo' em vez de 'carga'
+            "matrícula": senha_criptografada, # Tentei sem o acento
+            "carga": "Gestor Máximo",         # Tentei 'cargo' em vez de 'carga'
             "unidade": "SEDE"                 # Tentei 'unidade' em vez de 'Ótimo'
         }
         

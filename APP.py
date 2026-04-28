@@ -140,7 +140,7 @@ def criar_gestor_maximo_final(nome_completo, matricula_pura, senha_limpa):
         dados_usuario = {
             "nome": nome_completo,
             "email": email_formatado,      # No print está com hífen
-            "matrícula": senha_criptografada, # A matrícula em si
+            "matricula": senha_criptografada, # A matrícula em si
             "senha":  senha_criptografada,  # O hash vai para a coluna senha
             "cargo": "Gestor Máximo",         # No print do erro apareceu 'carga'
             "Ótimo": "SEDE"                   # No print da tabela, a coluna de unidade parece se chamar 'Ótimo'

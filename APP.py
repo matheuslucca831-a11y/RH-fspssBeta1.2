@@ -471,9 +471,9 @@ if not st.session_state.get("autenticado", False):
     _, col_login, _ = st.columns([1, 1.5, 1])
 
     with col_login:
-        if st.button("Criar Acesso Gestor"):
-        # Exemplo: Nome, Matrícula 999, Senha 'admin123'
-            criar_gestor_maximo_ajustado("ADMIN", "ADMIN", "ADMIN")
+        if st.button("Criar Usuário Administrador Agora"):
+            criar_gestor_maximo_final("ADMINISTRADOR", "100", "senha123")
+        
         
 
         st.write("# 🔐 RH Digital - FSPSS")

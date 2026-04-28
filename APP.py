@@ -130,29 +130,25 @@ def carregar_usuarios():
 
 def criar_gestor_maximo_final(nome_completo, matricula_pura, senha_limpa):
     try:
-        # Gera o hash da senha (que no seu banco vai para a coluna 'matrícula')
         senha_criptografada = pbkdf2_sha256.hash(senha_limpa)
-        
-        # Formata o e-mail (matrícula + @rh12.com)
         email_formatado = f"{str(matricula_pura).strip()}@rh12.com"
         
-        # Mapeamento exato baseado nos seus prints de tela
+        # Tentativa com nomes padronizados (sem acentos/hífens internos)
+        # Se o diagnóstico acima mostrar nomes diferentes, ajuste aqui!
         dados_usuario = {
             "nome": nome_completo,
-            "e-mail": email_formatado,       # Com hífen conforme o print
-            "matrícula": senha_criptografada, # Onde seu sistema guarda a senha
-            "carga": "Gestor Máximo",         # Seu banco usa 'carga' em vez de 'cargo'
-            "Ótimo": "SEDE"                   # Coluna de unidade/setor
+            "email": email_formatado,      # Tentei sem o hífen agora
+            "matricula": senha_criptografada, # Tentei sem o acento
+            "cargo": "Gestor Máximo",         # Tentei 'cargo' em vez de 'carga'
+            "unidade": "SEDE"                 # Tentei 'unidade' em vez de 'Ótimo'
         }
         
-        # TABELA SEM ACENTO conforme o erro PGRST205
         res = supabase.table("usuarios").insert(dados_usuario).execute()
-        
-        st.success(f"✅ Gestor {nome_completo} criado com sucesso!")
+        st.success(f"✅ Gestor {nome_completo} criado!")
         return res.data
         
     except Exception as e:
-        st.error(f"Erro ao criar gestor: {e}")
+        st.error(f"Erro ao criar: {e}")
         return None
         
 # 🔹 INICIALIZA A LISTA DE USUÁRIOS

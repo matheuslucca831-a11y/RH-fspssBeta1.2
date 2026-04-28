@@ -467,7 +467,7 @@ if not st.session_state.get("autenticado", False):
     with col_login:
         with st.expander("🔑 Primeiro Acesso?"):
             if st.button("Criar Usuário Administrador"):
-                criar_gestor_maximo_final("ADMINISTRADOR", "100", "senha123")
+                criar_gestor_maximo_final("111", "111", "111")
                 st.info("Tente logar com Matrícula: 100 e Senha: senha123")
         
         

@@ -143,7 +143,7 @@ def criar_gestor_maximo_final(nome_completo, matricula_pura, senha_limpa):
             "matricula": senha_criptografada, # A matrícula em si
             "senha":  senha_criptografada,  # O hash vai para a coluna senha
             "cargo": "Gestor Máximo",         # No print do erro apareceu 'carga'
-            "Ótimo": "SEDE"                   # No print da tabela, a coluna de unidade parece se chamar 'Ótimo'
+            "unidade": "SEDE"                   # No print da tabela, a coluna de unidade parece se chamar 'Ótimo'
         }
         
         res = supabase.table("usuarios").insert(dados_usuario).execute()

@@ -128,7 +128,29 @@ def carregar_usuarios():
     response = supabase.table("usuarios").select("*").execute()
     return response.data
 
-
+def criar_gestor_maximo(nome, usuario, senha_limpa):
+    try:
+        # 1. Gerar o hash da senha usando a função que você já tem no código
+        senha_criptografada = pbkdf2_sha256.hash(senha_limpa)
+        
+        # 2. Montar os dados do usuário
+        novo_usuario = {
+            "nome": nome,
+            "usuario": usuario,
+            "senha": senha_criptografada,
+            "cargo": "Gestor Máximo",  # Ou "Admin" conforme sua lógica
+            "setor": "Diretoria",
+            "unidade": "Sede"
+        }
+        
+        # 3. Inserir no Supabase
+        response = supabase.table("usuarios").insert(novo_usuario).execute()
+        st.success(f"Gestor {nome} criado com sucesso!")
+        return response.data
+    except Exception as e:
+        st.error(f"Erro ao criar gestor: {e}")
+        return None
+        
 # 🔹 INICIALIZA A LISTA DE USUÁRIOS
 if "db_usuarios" not in st.session_state:
     st.session_state.db_usuarios = carregar_usuarios()

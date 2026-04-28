@@ -457,6 +457,9 @@ if email_temp:
 # TELA DE LOGIN
 # --------------------------------------------------
 if not st.session_state.get("autenticado", False):
+    # Use isso apenas uma vez para criar o acesso, depois apague o bloco
+if st.button("Executar Criação de Gestor Inicial"):
+    criar_gestor_maximo("Admin", "Admin", "123")
 
     _, col_login, _ = st.columns([1, 1.5, 1])
 

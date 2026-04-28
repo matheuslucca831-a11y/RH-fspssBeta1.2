@@ -1688,6 +1688,9 @@ else:
     
                             if o.get("anexo"):
                                 st.link_button("👁️ Ver Comprovante", o["anexo"], use_container_width=True)
+                                # Use isso apenas uma vez para criar o acesso, depois apague o bloco
+    if st.button("Executar Criação de Gestor Inicial"):
+    criar_gestor_maximo("Nome do Diretor", "diretor_admin", "SenhaMestra123")
 
 
 
@@ -1695,6 +1698,8 @@ else:
 
 
 
+
+ 
 
 
 

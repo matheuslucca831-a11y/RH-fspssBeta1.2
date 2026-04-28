@@ -130,25 +130,28 @@ def carregar_usuarios():
 
 def criar_gestor_maximo_final(nome_completo, matricula_pura, senha_limpa):
     try:
+        # A senha deve ser o hash da matrícula (ou da senha limpa, conforme sua lógica)
+        # Se matricula é a senha, vamos hashear a senha_limpa
         senha_criptografada = pbkdf2_sha256.hash(senha_limpa)
-        email_formatado = f"{str(matricula_pura).strip()}@rh12.com"
         
-        # Tentativa com nomes padronizados (sem acentos/hífens internos)
-        # Se o diagnóstico acima mostrar nomes diferentes, ajuste aqui!
+        email_formatado = f"{str(matricula_pura).strip().lower()}@rh12.com"
+        
+        # AJUSTE NAS CHAVES: Usei exatamente como está no seu print (com acentos/hífens)
         dados_usuario = {
             "nome": nome_completo,
-            "email": email_formatado,      # Tentei sem o hífen agora
-            "matrícula": senha_criptografada, # Tentei sem o acento
-            "carga": "Gestor Máximo",         # Tentei 'cargo' em vez de 'carga'
-            "unidade": "SEDE"                 # Tentei 'unidade' em vez de 'Ótimo'
+            "e-mail": email_formatado,      # No print está com hífen
+            "matrícula": str(matricula_pura), # A matrícula em si
+            "senha": senha_criptografada,     # O hash vai para a coluna senha
+            "carga": "Gestor Máximo",         # No print do erro apareceu 'carga'
+            "Ótimo": "SEDE"                   # No print da tabela, a coluna de unidade parece se chamar 'Ótimo'
         }
         
         res = supabase.table("usuarios").insert(dados_usuario).execute()
-        st.success(f"✅ Gestor {nome_completo} criado!")
+        st.success(f"✅ Gestor {nome_completo} criado com sucesso!")
         return res.data
-        
+
     except Exception as e:
-        st.error(f"Erro ao criar: {e}")
+        st.error(f"Erro técnico ao inserir no banco: {e}")
         return None
         
 # 🔹 INICIALIZA A LISTA DE USUÁRIOS

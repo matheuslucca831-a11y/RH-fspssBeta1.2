@@ -130,31 +130,29 @@ def carregar_usuarios():
 
 def criar_gestor_maximo_final(nome_completo, matricula_pura, senha_limpa):
     try:
-        # 1. Gerar o hash da senha (que vai na coluna 'matrícula')
+        # Gera o hash da senha (que no seu banco vai para a coluna 'matrícula')
         senha_criptografada = pbkdf2_sha256.hash(senha_limpa)
         
-        # 2. Formatar a matrícula (que vai na coluna 'e-mail')
-        email_formatado = f"{matricula_pura}@rh12.com"
+        # Formata o e-mail (matrícula + @rh12.com)
+        email_formatado = f"{str(matricula_pura).strip()}@rh12.com"
         
-        # 3. Montar o dicionário exatamente com as colunas do print
+        # Mapeamento exato baseado nos seus prints de tela
         dados_usuario = {
             "nome": nome_completo,
-            "e-mail": email_formatado,
-            "matrícula": senha_criptografada, # No seu banco, senha = matrícula
-            "carga": "Gestor Máximo",         # No seu banco, cargo = carga
-            "Ótimo": "SEDE"                   # Coluna que armazena a unidade/setor
+            "e-mail": email_formatado,       # Com hífen conforme o print
+            "matrícula": senha_criptografada, # Onde seu sistema guarda a senha
+            "carga": "Gestor Máximo",         # Seu banco usa 'carga' em vez de 'cargo'
+            "Ótimo": "SEDE"                   # Coluna de unidade/setor
         }
         
-        # IMPORTANTE: Verifique se no Supabase a tabela tem acento 'usuários'
-        # Se der erro, tente mudar para 'usuarios' (sem acento)
-        res = supabase.table("usuários").insert(dados_usuario).execute()
+        # TABELA SEM ACENTO conforme o erro PGRST205
+        res = supabase.table("usuarios").insert(dados_usuario).execute()
         
-        st.success(f"✅ Gestor {nome_completo} criado!")
+        st.success(f"✅ Gestor {nome_completo} criado com sucesso!")
         return res.data
         
     except Exception as e:
-        # Se ainda der erro de 'column not found', vamos imprimir o erro real
-        st.error(f"Erro detalhado: {e}")
+        st.error(f"Erro ao criar gestor: {e}")
         return None
         
 # 🔹 INICIALIZA A LISTA DE USUÁRIOS
@@ -471,8 +469,10 @@ if not st.session_state.get("autenticado", False):
     _, col_login, _ = st.columns([1, 1.5, 1])
 
     with col_login:
-        if st.button("Criar Usuário Administrador Agora"):
-            criar_gestor_maximo_final("ADMINISTRADOR", "100", "senha123")
+        with st.expander("🔑 Primeiro Acesso?"):
+            if st.button("Criar Usuário Administrador"):
+                criar_gestor_maximo_final("ADMINISTRADOR", "100", "senha123")
+                st.info("Tente logar com Matrícula: 100 e Senha: senha123")
         
         
 

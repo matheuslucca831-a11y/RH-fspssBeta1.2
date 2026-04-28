@@ -128,27 +128,33 @@ def carregar_usuarios():
     response = supabase.table("usuarios").select("*").execute()
     return response.data
 
-def criar_gestor_maximo_ajustado(nome_completo, matricula_pura, senha_limpa):
+def criar_gestor_maximo_final(nome_completo, matricula_pura, senha_limpa):
     try:
-        # No seu sistema, a 'matrícula' no banco guarda a SENHA criptografada
+        # 1. Gerar o hash da senha (que vai na coluna 'matrícula')
         senha_criptografada = pbkdf2_sha256.hash(senha_limpa)
         
-        # O 'e-mail' no banco guarda a MATRÍCULA + @rh12.com
+        # 2. Formatar a matrícula (que vai na coluna 'e-mail')
         email_formatado = f"{matricula_pura}@rh12.com"
         
-        novo_usuario = {
+        # 3. Montar o dicionário exatamente com as colunas do print
+        dados_usuario = {
             "nome": nome_completo,
-            "e-mail": email_formatado, # Coluna com hífen conforme o print
-            "matrícula": senha_criptografada, # Onde o sistema guarda a senha
-            "carga": "Gestor Máximo", # No banco está escrito 'carga' e não 'cargo'
-            "Ótimo": "Sede" # Coluna que parece ser o setor/unidade
+            "e-mail": email_formatado,
+            "matrícula": senha_criptografada, # No seu banco, senha = matrícula
+            "carga": "Gestor Máximo",         # No seu banco, cargo = carga
+            "Ótimo": "SEDE"                   # Coluna que armazena a unidade/setor
         }
         
-        response = supabase.table("usuários").insert(novo_usuario).execute()
-        st.success(f"Gestor {nome_completo} criado com sucesso!")
-        return response.data
+        # IMPORTANTE: Verifique se no Supabase a tabela tem acento 'usuários'
+        # Se der erro, tente mudar para 'usuarios' (sem acento)
+        res = supabase.table("usuários").insert(dados_usuario).execute()
+        
+        st.success(f"✅ Gestor {nome_completo} criado!")
+        return res.data
+        
     except Exception as e:
-        st.error(f"Erro ao criar gestor: {e}")
+        # Se ainda der erro de 'column not found', vamos imprimir o erro real
+        st.error(f"Erro detalhado: {e}")
         return None
         
 # 🔹 INICIALIZA A LISTA DE USUÁRIOS

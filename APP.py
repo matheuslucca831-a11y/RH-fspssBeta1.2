@@ -139,7 +139,7 @@ def criar_gestor_maximo_final(nome_completo, matricula_pura, senha_limpa):
         # AJUSTE NAS CHAVES: Usei exatamente como está no seu print (com acentos/hífens)
         dados_usuario = {
             "nome": nome_completo,
-            "e-mail": email_formatado,      # No print está com hífen
+            "email": email_formatado,      # No print está com hífen
             "matrícula": senha_criptografada, # A matrícula em si
             "senha":  senha_criptografada,  # O hash vai para a coluna senha
             "cargo": "Gestor Máximo",         # No print do erro apareceu 'carga'
